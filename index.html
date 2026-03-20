@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -499,19 +500,24 @@ select option{background:var(--mah-dark);}
 .tab-reset-row{
   display:flex;justify-content:flex-end;
   margin-top:28px;padding-top:16px;
-  border-top:1px solid rgba(184,115,42,.1);
+  border-top:1px solid rgba(184,115,42,.15);
 }
 .btn-reset{
-  background:none;border:none;
-  color:var(--ink-ghost);
-  font-family:'Lora',serif;font-size:12px;
+  background:rgba(120,30,30,.25);
+  border:1px solid rgba(180,60,60,.4);
+  color:#e09090;
+  font-family:'Lora',serif;font-size:13px;
   letter-spacing:.06em;cursor:pointer;
-  padding:6px 10px;border-radius:3px;
-  transition:color .2s,background .2s;
+  padding:9px 18px;border-radius:3px;
+  transition:all .22s;
+  box-shadow:0 1px 4px rgba(0,0,0,.3);
 }
 .btn-reset:hover{
-  color:#e07070;
-  background:rgba(160,40,40,.12);
+  background:rgba(160,40,40,.45);
+  border-color:rgba(220,80,80,.65);
+  color:#f0a0a0;
+  box-shadow:0 2px 10px rgba(160,40,40,.3);
+  transform:translateY(-1px);
 }
 /* ── LEARN TAB ── */
 .learn-section{
@@ -565,6 +571,90 @@ select option{background:var(--mah-dark);}
   text-align:center;padding:30px 20px;
   color:var(--ink-ghost);font-style:italic;font-size:14px;
 }
+/* ── HACKS TAB ── */
+.hack-section{ margin-bottom:10px; }
+.hack-section-title{
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:600;
+  color:var(--lampglow);
+  margin-bottom:14px;
+  text-shadow:0 0 14px rgba(232,184,74,.25);
+}
+.hack-card{
+  background:linear-gradient(160deg,rgba(20,12,4,.8),rgba(30,18,6,.82));
+  border:1px solid rgba(184,115,42,.2);
+  border-left:3px solid var(--brass);
+  border-radius:0 4px 4px 0;
+  padding:18px 18px 14px;
+  margin-bottom:14px;
+}
+.hack-card-featured{
+  border-left-color:var(--lampglow);
+  background:linear-gradient(160deg,rgba(26,16,4,.85),rgba(38,22,6,.88));
+}
+.hack-card-title{
+  font-family:'Playfair Display',serif;
+  font-size:15px;font-weight:600;
+  color:var(--ink-dry);
+  margin-bottom:6px;
+}
+.hack-badge{
+  display:inline-block;
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-ghost);
+  border:1px solid rgba(184,115,42,.2);
+  border-radius:2px;padding:2px 8px;
+  margin-bottom:10px;
+}
+.hack-badge-best{
+  color:var(--lampglow);
+  border-color:rgba(232,184,74,.35);
+}
+.hack-sub{
+  font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--brass2);margin:12px 0 6px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.hack-p{
+  font-size:14px;color:var(--ink-faded);
+  line-height:1.7;margin-bottom:8px;
+}
+.hack-p strong{ color:var(--ink-dry); }
+.hack-code{
+  background:rgba(0,0,0,.4);
+  border:1px solid rgba(184,115,42,.18);
+  border-radius:3px;
+  padding:12px 14px;
+  font-family:'Courier New',monospace;
+  font-size:12px;
+  color:var(--paper);
+  line-height:1.7;
+  white-space:pre-wrap;
+  margin-bottom:8px;
+  word-break:break-word;
+}
+.hack-list{
+  padding-left:18px;
+  color:var(--ink-dry);
+  font-size:13px;line-height:1.85;
+  margin-bottom:4px;
+}
+.hack-ol{ list-style:decimal; }
+.hack-list li{ margin-bottom:5px; }
+.hack-list strong{ color:var(--paper); }
+.hack-list em{ color:var(--ink-faded);font-style:italic; }
+.hack-tips{
+  background:rgba(184,115,42,.06);
+  border:1px solid rgba(184,115,42,.15);
+  border-radius:3px;
+  padding:12px 14px;
+  margin-top:12px;
+}
+.hack-tips-title{
+  font-size:12px;letter-spacing:.08em;
+  color:var(--brass2);text-transform:uppercase;
+  margin-bottom:8px;
+}
 </style>
 </head>
 <body>
@@ -582,18 +672,20 @@ select option{background:var(--mah-dark);}
   <button class="tab" onclick="showTab('arrange',this)"><span class="tab-ic">🎛️</span>Arrange</button>
   <button class="tab" onclick="showTab('prompt',this)"><span class="tab-ic">📋</span>Prompt</button>
   <button class="tab" onclick="showTab('learn',this)"><span class="tab-ic">📖</span>Learn</button>
+  <button class="tab" onclick="showTab('hacks',this)"><span class="tab-ic">⚡</span>Hacks</button>
   <button class="tab" onclick="showTab('settings',this)"><span class="tab-ic">⚙️</span>Settings</button>
 </nav>
 
 <!-- LYRICS -->
 <div id="tab-lyrics" class="panel on">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-    <div class="info" style="margin-bottom:0;flex:1;margin-right:10px;">Write your lyrics here. Use the tags to mark your structure — Verse, Chorus, Bridge, etc. Your words, your voice. We help shape the sound.</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <div class="lbl" style="margin-bottom:0;">Song Title</div>
     <button class="btn-reset" onclick="resetLyrics()">↺ Reset</button>
   </div>
-  <div class="lbl">Song Title</div>
-  <input type="text" id="song-title" placeholder="Untitled song…" style="margin-bottom:18px;" oninput="save()">
-  <div class="lbl">Lyrics</div>
+  <input type="text" id="song-title" placeholder="Untitled song…" style="margin-bottom:22px;" oninput="save()">
+
+  <div class="lbl">Write Your Lyrics</div>
+  <p style="font-size:13px;color:var(--ink-faded);line-height:1.65;margin-bottom:10px;">Tap a section tag to label each part of your song, then write directly in the box below. Your words, your voice — we help shape the sound around them.</p>
   <div class="stag-row">
     <button class="stag" onclick="insertTag('[Verse]')">Verse</button>
     <button class="stag" onclick="insertTag('[Pre-Chorus]')">Pre-Chorus</button>
@@ -1015,6 +1107,131 @@ The heart of your song…"></textarea>
   </div><!-- end learn-content -->
 </div>
 
+<!-- HACKS -->
+<div id="tab-hacks" class="panel">
+  <div class="lbl">Suno Hacks &amp; Techniques</div>
+  <p style="font-size:13px;color:var(--ink-faded);line-height:1.7;margin-bottom:20px;">
+    Hard-won techniques from the Suno community. Use these alongside your generated prompt to get closer to the sound you actually want.
+  </p>
+
+  <!-- CHORD HACKS -->
+  <div class="hack-section">
+    <div class="hack-section-title">🎸 Chord Hacks</div>
+
+    <div class="hack-card">
+      <div class="hack-card-title">Method 1 — Text-Only Prompt Techniques</div>
+      <div class="hack-badge">Hit-or-Miss · Quick to Try</div>
+      <p class="hack-p">Use <strong>Custom Mode</strong> (toggle it on when creating a song) to separate Style and Lyrics. This prevents Suno from vocalizing your chords.</p>
+
+      <div class="hack-sub">Label it explicitly <span class="hack-rec">Most Recommended</span></div>
+      <div class="hack-code">Style: instrumental trance in A minor, uplifting chord progression
+Lyrics: Chord progression: [Am] [F] [G] [Em]</div>
+
+      <div class="hack-sub">Embed chords directly in lyrics</div>
+      <div class="hack-code">Style: [your genre + key + mood]
+Lyrics: [Am] this is the [F] start of the [C] verse [G] now</div>
+
+      <div class="hack-sub">The [Chords:] tag hack <span class="hack-badge">Community · Inconsistent</span></div>
+      <div class="hack-code">[Chords: |Am|-|F|-|C|-|G|]</div>
+      <p class="hack-p" style="font-size:12px;margin-top:4px;">Pipes and dashes separate chords.</p>
+
+      <div class="hack-sub">Descriptive phrasing in Style</div>
+      <div class="hack-code">"in A minor with chord progression Am–F–G–Em"
+"use I–V–vi–IV progression, strictly follow the chords"</div>
+
+      <div class="hack-tips">
+        <div class="hack-tips-title">💡 Tips for better text results</div>
+        <ul class="hack-list">
+          <li>Add genre/era + mood + BPM — e.g. <em>"melancholic neo-soul, jazz chords, 78 BPM"</em></li>
+          <li>Be repetitive and specific: <em>"chord progression Am F G Em throughout the entire song, no deviations"</em></li>
+          <li>Generate multiple times — Suno is stochastic. Lower Weirdness if available.</li>
+          <li>Works okay for simple common progressions but rarely locks in complex ones perfectly.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="hack-card hack-card-featured">
+      <div class="hack-card-title">Method 2 — Upload Audio of Your Chord Progression</div>
+      <div class="hack-badge hack-badge-best">⭐ Most Reliable Method</div>
+      <p class="hack-p">This forces Suno to follow your exact harmony because it analyzes the uploaded audio as a reference.</p>
+
+      <div class="hack-sub">Step-by-step:</div>
+      <ol class="hack-list hack-ol">
+        <li>Create a short audio clip (10–30 seconds) of your chord progression looping — play it on piano, guitar, or use GarageBand/Ableton and export as MP3/WAV. Keep it clean and repetitive — no melody or drums yet.</li>
+        <li>In Suno: Click <strong>Create → Upload Audio</strong>. Upload your chord clip. Choose <strong>Cover mode</strong> (or Instrumental if no lyrics).</li>
+        <li>In the prompt — Style: <em>[genre description] + "strictly follow the uploaded audio's chord progression and harmony exactly, no changes"</em></li>
+        <li>If using Remix/Extend later: Crank <strong>Audio Influence</strong> high (75–90%) and Style Influence medium (60–80%). Lower Weirdness for tighter adherence.</li>
+        <li>Generate. The first clip often follows the chords best — check and regenerate as needed.</li>
+      </ol>
+
+      <div class="hack-sub">Example full prompt with upload:</div>
+      <div class="hack-code">Style: dreamy lo-fi hip-hop in A minor, warm Rhodes piano,
+follow the uploaded chord progression exactly (Am–F–C–G loop)
+Lyrics: [your verses/chorus here]</div>
+
+      <div class="hack-tips">
+        <div class="hack-tips-title">🔧 Quick Troubleshooting</div>
+        <ul class="hack-list">
+          <li><strong>Suno sings the chord names</strong> → switch to Custom Mode and separate style/lyrics</li>
+          <li><strong>It ignores everything</strong> → upload audio + high influence slider</li>
+          <li><strong>For tighter control</strong> → generate a short instrumental first, then Extend it while referencing your chord clip</li>
+          <li><strong>Suno still isn't perfect</strong> with inversions, complex jazz voicings, or descending bass lines — simple triads/sevenths work best</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- TECHNIQUE HACKS -->
+  <div class="hack-section">
+    <div class="hack-section-title">⚡ Technique Hacks</div>
+
+    <div class="hack-card hack-card-featured">
+      <div class="hack-card-title">1. The "Top-Loaded Palette" Prompt Formula</div>
+      <div class="hack-badge hack-badge-best">Cuts wasted credits by ~60%</div>
+      <p class="hack-p">Stop writing full sentences. Use this exact structure in the Style box:</p>
+      <div class="hack-code">[Mood] + [Energy] + [2 Instruments max] + [Vocal Identity]</div>
+      <div class="hack-sub">Examples:</div>
+      <div class="hack-code">"Melancholic, low-energy, fingerstyle acoustic guitar + warm Rhodes,
+soft breathy female vocal"
+
+"Cinematic dark, explosive energy, distorted guitars + double-kick
+drums, raspy male vocal"</div>
+      <p class="hack-p" style="margin-top:8px;">This is the <strong>#1 hack in 2026.</strong> Suno's weights lock onto it instantly.</p>
+    </div>
+
+    <div class="hack-card">
+      <div class="hack-card-title">2. Meta Tags &amp; Structure Tags</div>
+      <div class="hack-badge">Forces proper songs every time</div>
+      <p class="hack-p">Put these in the <strong>Lyrics box</strong> (Custom Mode). Suno treats anything in [brackets] as instructions, not lyrics.</p>
+
+      <div class="hack-sub">Must-use tags:</div>
+      <div class="hack-code">[Verse 1] / [Chorus] / [Bridge] / [Outro] / [Instrumental Break]
+[Energy: Low] → [Add Tension] → [Energy: High, Explosive]</div>
+
+      <div class="hack-sub">Tag stacking (3–5 lines at start of a section):</div>
+      <div class="hack-code">[Verse 1]
+[Mood: Melancholic, Reflective]
+[Energy: Low, Sparse]
+[Instrumentation: Solo acoustic guitar, distant reverb]
+[Vocal: Soft, breathy, intimate]
+
+Your first line of lyrics here...</div>
+
+      <div class="hack-tips">
+        <div class="hack-tips-title">💡 Pro tip</div>
+        <ul class="hack-list">
+          <li>Stack tags before each section for maximum control over how each part sounds.</li>
+          <li>Use <strong>[Instrumental Break]</strong> to force a solo or pause with no vocals.</li>
+          <li>Use <strong>[Fade Out]</strong> or <strong>[Abrupt End]</strong> to control endings.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div id="tab-settings" class="panel">
   <div class="s-row">
@@ -1055,20 +1272,20 @@ The heart of your song…"></textarea>
   <div class="s-row" style="border-top:1px solid rgba(184,115,42,.2);padding-top:20px;margin-top:4px;">
     <div class="s-ic">☕</div>
     <div class="s-text">
-      <h3>Support Music Architect</h3>
-      <p>This app is free — no subscription, no ads, no data collection. If it helped you make something, a small contribution keeps the light on and the desk warm.</p>
-      <a href="https://www.buymeacoffee.com/dannycan"
+      <h3>Leave a Tip</h3>
+      <p>This app is free — no subscription, no ads, no data collection. If it helped you make something, a tip keeps the light on and the desk warm.</p>
+      <a href="https://www.buymeacoffee.com/YOURNAMEHERE"
          target="_blank"
          style="
-           display:inline-flex;align-items:center;gap:10px;
-           margin-top:14px;
-           padding:12px 22px;
+           display:inline-flex;align-items:center;gap:12px;
+           margin-top:16px;
+           padding:16px 30px;
            background:linear-gradient(135deg,#7a4a10,#a06020);
            border:1px solid rgba(184,115,42,.5);
            border-radius:3px;
            color:var(--paper);
            font-family:'Lora',serif;
-           font-size:14px;
+           font-size:17px;
            letter-spacing:.04em;
            text-decoration:none;
            box-shadow:0 2px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);
@@ -1077,40 +1294,40 @@ The heart of your song…"></textarea>
          onmouseover="this.style.background='linear-gradient(135deg,#8a5618,#b07030)'"
          onmouseout="this.style.background='linear-gradient(135deg,#7a4a10,#a06020)'"
       >
-        ☕ Buy me a coffee
+        ☕ Leave a tip
       </a>
       <p style="margin-top:10px;font-size:12px;color:var(--ink-ghost);">Opens in a new tab. No account needed — even a dollar means a lot.</p>
     </div>
   </div>
 </div>
 
-<!-- Floating coffee button -->
+<!-- Floating tip button -->
 <a id="coffee-float"
-   href="https://www.buymeacoffee.com/dannycan"
+   href="https://www.buymeacoffee.com/YOURNAMEHERE"
    target="_blank"
-   title="Support Music Architect"
+   title="Leave a tip"
    style="
      position:fixed;
      bottom:24px;right:20px;
      z-index:150;
      display:flex;align-items:center;gap:8px;
-     padding:10px 18px;
+     padding:13px 22px;
      background:linear-gradient(135deg,#6a3c10,#9a5820);
      border:1px solid rgba(184,115,42,.55);
      border-radius:30px;
      color:var(--paper);
      font-family:'Lora',serif;
-     font-size:13px;
+     font-size:15px;
      letter-spacing:.04em;
      text-decoration:none;
      box-shadow:0 4px 20px rgba(0,0,0,.6),0 0 0 1px rgba(184,115,42,.15);
      transition:all .25s;
-     opacity:.88;
+     opacity:.92;
    "
    onmouseover="this.style.opacity='1';this.style.transform='translateY(-2px)'"
-   onmouseout="this.style.opacity='.88';this.style.transform='translateY(0)'"
+   onmouseout="this.style.opacity='.92';this.style.transform='translateY(0)'"
 >
-  ☕ <span>Support this app</span>
+  ☕ <span>Leave a tip</span>
 </a>
 
 <div id="toast"></div>
