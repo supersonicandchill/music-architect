@@ -2,2066 +2,1923 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Music Architect">
-<meta name="theme-color" content="#0e0804">
-<title>Music Architect</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-<style>
-:root {
-  --mah-deep:   #0e0804;
-  --mah-dark:   #1c1008;
-  --mah-mid:    #2e1a0a;
-  --mah-warm:   #4a2810;
-  --mah-grain:  #3a1e0c;
-  --mah-edge:   #6b3a18;
-  --brass:      #b8732a;
-  --brass2:     #d4903c;
-  --lampglow:   #e8b84a;
-  --ink-dry:    #f5edd0;
-  --ink-faded:  #d4a86a;
-  --ink-ghost:  #9a7040;
-  --paper:      #f2e8cc;
-  --paper-aged: #d4b878;
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Music Architect</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#1a0e05" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ─────────────────────────────────────────────
+       TOKENS & RESET
+    ───────────────────────────────────────────── */
+    :root {
+      --mahogany:   #3d1a0a;
+      --mahogany-l: #5c2a10;
+      --amber:      #c8762a;
+      --amber-l:    #e8963a;
+      --gold:       #f0c060;
+      --cream:      #f5ead8;
+      --cream-d:    #e8d8c0;
+      --ink:        #1a0e05;
+      --smoke:      rgba(255,235,200,0.06);
+      --smoke2:     rgba(255,235,200,0.10);
+      --border:     rgba(200,118,42,0.22);
+      --success:    #5cba8a;
+      --glow-amber: 0 0 24px rgba(200,118,42,0.45);
+      --glow-gold:  0 0 20px rgba(240,192,96,0.50);
+      --font-head: 'Playfair Display', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --tab-h: 52px;
+      --nav-h: 60px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--ink);
+      color: var(--cream);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
 
-*{box-sizing:border-box;margin:0;padding:0;}
+    /* ─────────────────────────────────────────────
+       AMBIENT BACKGROUND
+    ───────────────────────────────────────────── */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 50% at 15% 20%, rgba(90,35,10,0.55) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 60% at 85% 75%, rgba(60,20,5,0.60) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(200,118,42,0.08) 0%, transparent 70%),
+        linear-gradient(175deg, #1a0e05 0%, #0d0602 60%, #120a03 100%);
+    }
+    /* subtle grain */
+    .bg-canvas::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.35;
+    }
 
-body{
-  background: var(--mah-dark);
-  font-family:'Lora',Georgia,serif;
-  color:var(--ink-dry);
-  min-height:100vh;
-  overflow-x:hidden;
-}
+    /* floating notes */
+    .float-note {
+      position: fixed;
+      font-size: 22px;
+      color: var(--amber);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+      animation: noteRise 14s linear infinite;
+      filter: blur(0.5px);
+    }
+    @keyframes noteRise {
+      0%   { transform: translateY(105vh) rotate(-15deg); opacity: 0; }
+      8%   { opacity: 0.18; }
+      92%  { opacity: 0.12; }
+      100% { transform: translateY(-10vh) rotate(20deg);  opacity: 0; }
+    }
 
-/* No overlay — removed entirely */
-body::after{ display:none; }
+    /* ─────────────────────────────────────────────
+       TOP NAV
+    ───────────────────────────────────────────── */
+    .top-nav {
+      position: sticky; top: 0; z-index: 200;
+      height: var(--nav-h);
+      background: rgba(15,7,2,0.92);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 14px;
+    }
+    .nav-logo {
+      font-family: var(--font-head);
+      font-size: 20px;
+      color: var(--gold);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-logo span { font-size: 22px; }
 
-/* Lamp glow — tiny, stays above header only */
-#flame{
-  position:fixed;top:-120px;left:50%;transform:translateX(-50%);
-  width:200px;height:140px;
-  background:radial-gradient(ellipse,
-    rgba(232,184,74,.12) 0%,
-    transparent 70%
-  );
-  pointer-events:none;z-index:0;
-  animation:lampflicker 5s ease-in-out infinite alternate;
-}
-@keyframes lampflicker{
-  0%  {opacity:.80;transform:translateX(-50%) scale(1);}
-  30% {opacity:.95;transform:translateX(-49%) scale(1.02);}
-  70% {opacity:.75;transform:translateX(-51%) scale(.99);}
-  100%{opacity:.88;transform:translateX(-50%) scale(1.01);}
-}
+    /* progress bar in nav */
+    .nav-progress-wrap {
+      flex: 1;
+      height: 5px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .nav-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--amber), var(--gold));
+      border-radius: 9999px;
+      transition: width 0.7s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 0 12px rgba(200,118,42,0.6);
+    }
 
-/* ── HEADER ── */
-header{
-  position:relative;z-index:1;
-  text-align:center;
-  padding:48px 20px 24px;
-  background: linear-gradient(to bottom,
-    rgba(46,26,10,.85) 0%,
-    rgba(30,16,8,.6) 100%
-  );
-  border-bottom:1px solid rgba(184,115,42,.28);
-  box-shadow:0 4px 32px rgba(0,0,0,.6);
-}
+    /* nav right buttons */
+    .nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .nav-icon-btn {
+      background: none; border: none;
+      color: var(--cream-d); font-size: 20px;
+      cursor: pointer; padding: 6px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-icon-btn:hover { color: var(--gold); background: var(--smoke2); }
 
-/* Subtle brass inlay line under header */
-header::after{
-  content:'';display:block;
-  width:60%;margin:16px auto 0;
-  height:1px;
-  background:linear-gradient(to right,
-    transparent,
-    rgba(184,115,42,.5) 20%,
-    rgba(212,144,60,.8) 50%,
-    rgba(184,115,42,.5) 80%,
-    transparent
-  );
-}
+    /* ─────────────────────────────────────────────
+       TAB BAR
+    ───────────────────────────────────────────── */
+    .tab-bar {
+      position: sticky; top: var(--nav-h); z-index: 190;
+      height: var(--tab-h);
+      background: rgba(10,5,2,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 0 0 auto;
+      padding: 0 18px;
+      height: 100%;
+      background: none; border: none;
+      color: rgba(245,234,216,0.45);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex; align-items: center; gap: 6px;
+      border-bottom: 2px solid transparent;
+      transition: color 0.25s, border-color 0.25s;
+      position: relative;
+    }
+    .tab-btn .tab-emoji { font-size: 16px; }
+    .tab-btn.active {
+      color: var(--gold);
+      border-bottom-color: var(--amber);
+    }
+    .tab-btn:hover:not(.active) { color: var(--cream-d); }
+    /* completion dot */
+    .tab-dot {
+      width: 6px; height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--success);
+      display: none;
+    }
+    .tab-btn.done .tab-dot { display: block; }
 
-.flame-ic{
-  font-size:28px;display:block;margin-bottom:10px;
-  filter:drop-shadow(0 0 12px rgba(232,184,74,.6));
-  animation:lampflicker 4s ease-in-out infinite alternate;
-}
-h1{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(24px,6.5vw,48px);
-  font-weight:600;letter-spacing:.09em;
-  color:var(--lampglow);
-  text-shadow:
-    0 0 40px rgba(232,184,74,.5),
-    0 0 80px rgba(200,130,40,.2),
-    0 3px 8px rgba(0,0,0,.95);
-}
-.tagline{
-  font-style:italic;font-size:12px;
-  color:var(--ink-faded);
-  margin-top:7px;letter-spacing:.12em;
-  text-shadow:0 1px 3px rgba(0,0,0,.8);
-}
+    /* ─────────────────────────────────────────────
+       MAIN LAYOUT
+    ───────────────────────────────────────────── */
+    #app-root {
+      position: relative; z-index: 10;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 28px 20px 140px;
+    }
 
-/* ── TABS ── */
-.tabs{
-  display:flex;position:relative;z-index:1;
-  background:linear-gradient(to bottom, rgba(20,12,5,.9), rgba(14,8,4,.95));
-  border-bottom:1px solid rgba(184,115,42,.2);
-  overflow-x:auto;scrollbar-width:none;
-  box-shadow:0 2px 16px rgba(0,0,0,.5);
-}
-.tabs::-webkit-scrollbar{display:none;}
-.tab{
-  flex:1;min-width:72px;padding:14px 8px 12px;
-  background:none;border:none;color:var(--ink-ghost);
-  font-family:'Lora',serif;font-size:13px;letter-spacing:.05em;
-  cursor:pointer;border-bottom:2px solid transparent;
-  transition:color .3s,border-color .3s,background .3s;
-  white-space:nowrap;
-}
-.tab:hover{
-  color:var(--ink-faded);
-  background:rgba(74,40,16,.15);
-}
-.tab.on{
-  color:var(--lampglow);
-  border-bottom-color:var(--brass2);
-  background:rgba(74,40,16,.2);
-  text-shadow:0 0 14px rgba(232,184,74,.35);
-}
-.tab-ic{display:block;font-size:17px;margin-bottom:3px;}
+    /* panels */
+    .panel { display: none; animation: panelIn 0.35s ease; }
+    .panel.active { display: block; }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-/* ── PANELS ── */
-.panel{
-  display:none;padding:26px 20px;
-  max-width:780px;margin:0 auto;
-  position:relative;z-index:1;
-  background: var(--mah-dark);
-}
-.panel.on{display:block;}
+    /* ─────────────────────────────────────────────
+       CARDS
+    ───────────────────────────────────────────── */
+    .card {
+      background: rgba(255,235,200,0.045);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 26px;
+      margin-bottom: 22px;
+      transition: box-shadow 0.4s ease, border-color 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(240,192,96,0.3), transparent);
+    }
+    .card:hover {
+      border-color: rgba(200,118,42,0.45);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(200,118,42,0.1);
+    }
+    .card.complete {
+      border-color: rgba(92,186,138,0.35);
+      box-shadow: 0 0 20px rgba(92,186,138,0.1);
+    }
 
-/* ── SECTION LABELS — like stamped brass plaques ── */
-.lbl{
-  font-family:'Playfair Display',serif;
-  font-size:12px;letter-spacing:.18em;
-  text-transform:uppercase;
-  color:var(--brass2);
-  margin-bottom:10px;
-  display:flex;align-items:center;gap:10px;
-  text-shadow:0 0 12px rgba(212,144,60,.3);
-}
-.lbl::before{
-  content:'';width:16px;height:1px;
-  background:linear-gradient(to left,rgba(184,115,42,.6),transparent);
-  flex-shrink:0;
-}
-.lbl::after{
-  content:'';flex:1;height:1px;
-  background:linear-gradient(to right,rgba(184,115,42,.5),transparent);
-}
+    .card-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 18px; gap: 12px;
+    }
+    .card-title {
+      font-family: var(--font-head);
+      font-size: 20px; font-weight: 500;
+      color: var(--gold);
+    }
+    .badge-complete {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      background: rgba(92,186,138,0.15);
+      color: var(--success);
+      border: 1px solid rgba(92,186,138,0.3);
+      padding: 3px 10px; border-radius: 9999px;
+      display: none; white-space: nowrap;
+      align-self: center;
+    }
+    .card.complete .badge-complete { display: block; }
 
-.divider{
-  height:1px;margin:22px 0;
-  background:linear-gradient(to right,
-    transparent,
-    rgba(184,115,42,.3) 20%,
-    rgba(184,115,42,.5) 50%,
-    rgba(184,115,42,.3) 80%,
-    transparent
-  );
-}
+    /* section hint text */
+    .hint { font-size: 14px; color: rgba(245,234,216,0.5); margin-bottom: 14px; line-height: 1.5; }
 
-/* ── INPUTS — sheet music paper feel ── */
-textarea,select,input[type=text],input[type=password],input[type=number]{
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 30px,
-      rgba(184,115,42,.07) 30px,
-      rgba(184,115,42,.07) 31px
-    ),
-    linear-gradient(135deg, rgba(18,10,4,.95) 0%, rgba(24,14,6,.98) 100%);
-  border:1px solid rgba(184,115,42,.25);
-  border-radius:3px;
-  color:var(--ink-dry);
-  font-family:'Lora',serif;font-size:16px;
-  padding:10px 14px;outline:none;
-  transition:border-color .3s,box-shadow .3s;
-  width:100%;
-  box-shadow:inset 0 2px 8px rgba(0,0,0,.4), inset 0 0 0 1px rgba(0,0,0,.2);
-}
-textarea{
-  resize:vertical;min-height:200px;
-  line-height:2.0;font-size:17px;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 31px,
-      rgba(184,115,42,.09) 31px,
-      rgba(184,115,42,.09) 32px
-    ),
-    linear-gradient(160deg, rgba(16,9,3,.96) 0%, rgba(22,13,5,.99) 100%);
-}
-textarea::placeholder,input::placeholder{
-  color:rgba(200,154,96,.45);font-style:italic;
-}
-textarea:focus,select:focus,input:focus{
-  border-color:rgba(212,144,60,.5);
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,.4),
-    0 0 0 1px rgba(184,115,42,.2),
-    0 0 20px rgba(184,115,42,.08);
-}
-select option{background:var(--mah-dark);}
+    /* ─────────────────────────────────────────────
+       FORM ELEMENTS
+    ───────────────────────────────────────────── */
+    textarea, input[type="text"], input[type="number"], input[type="password"] {
+      width: 100%;
+      background: rgba(255,235,200,0.06);
+      border: 1px solid rgba(200,118,42,0.2);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      resize: vertical;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(200,118,42,0.15);
+    }
+    textarea::placeholder, input::placeholder { color: rgba(245,234,216,0.3); }
 
-/* ── BUTTONS — polished brass hardware ── */
-.btn{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:12px 24px;border-radius:3px;border:none;
-  font-family:'Lora',serif;font-size:15px;
-  cursor:pointer;transition:all .25s;letter-spacing:.04em;
-}
-.btn-main{
-  background:linear-gradient(160deg,
-    #5a2e08 0%,
-    #7a4012 40%,
-    #8c4e18 60%,
-    #6a3810 100%
-  );
-  color:var(--paper);
-  border:1px solid rgba(184,115,42,.5);
-  box-shadow:
-    0 2px 12px rgba(0,0,0,.6),
-    0 1px 0 rgba(255,255,255,.06) inset,
-    0 -1px 0 rgba(0,0,0,.4) inset;
-}
-.btn-main:hover:not(:disabled){
-  background:linear-gradient(160deg,
-    #6a3810 0%,
-    #8a4e1c 40%,
-    #9c5c22 60%,
-    #7a4414 100%
-  );
-  box-shadow:0 4px 20px rgba(184,115,42,.25), 0 1px 0 rgba(255,255,255,.08) inset;
-  transform:translateY(-1px);
-}
-.btn-main:disabled{opacity:.35;cursor:not-allowed;}
-.btn-ghost{
-  background:transparent;
-  color:var(--brass2);
-  border:1px solid rgba(184,115,42,.38);
-  box-shadow:0 1px 4px rgba(0,0,0,.3);
-}
-.btn-ghost:hover{
-  background:rgba(74,40,16,.25);
-  border-color:rgba(212,144,60,.55);
-  box-shadow:0 2px 10px rgba(0,0,0,.4);
-}
-.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+    label {
+      display: block;
+      font-size: 13px; font-weight: 500;
+      color: rgba(240,192,96,0.7);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
 
-/* ── CHIPS — small brass tag labels ── */
-.chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
-.chip{
-  padding:6px 14px;border-radius:2px;
-  border:1px solid rgba(184,115,42,.25);
-  background:rgba(46,26,10,.4);
-  color:var(--ink-faded);
-  font-family:'Lora',serif;font-size:13px;
-  cursor:pointer;transition:all .2s;
-  box-shadow:0 1px 3px rgba(0,0,0,.3);
-}
-.chip:hover{
-  color:var(--ink-dry);
-  border-color:rgba(184,115,42,.5);
-  background:rgba(74,40,16,.5);
-}
-.chip.on{
-  background:linear-gradient(135deg,rgba(90,46,16,.8),rgba(106,56,20,.8));
-  border-color:var(--brass2);
-  color:var(--lampglow);
-  box-shadow:0 0 10px rgba(184,115,42,.15),0 1px 3px rgba(0,0,0,.4);
-}
+    select {
+      width: 100%;
+      background: rgba(255,235,200,0.08);
+      border: 1px solid rgba(200,118,42,0.25);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 14px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    select option { background: #2a1205; }
+    select:focus { outline: none; border-color: var(--amber); }
 
-/* ── CHORD PILLS — like small ivory keys ── */
-.chord-grid{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;}
-.cpill{
-  background:linear-gradient(160deg,
-    rgba(50,30,12,.98) 0%,
-    rgba(64,38,14,.95) 50%,
-    rgba(44,26,10,.98) 100%
-  );
-  border:1px solid rgba(184,115,42,.3);
-  border-radius:4px;padding:10px 16px;
-  text-align:center;cursor:pointer;transition:all .22s;
-  box-shadow:
-    0 3px 8px rgba(0,0,0,.5),
-    0 1px 0 rgba(255,255,255,.04) inset;
-}
-.cpill:hover{
-  border-color:var(--brass2);
-  transform:translateY(-3px);
-  box-shadow:0 6px 18px rgba(0,0,0,.5),0 0 14px rgba(184,115,42,.18);
-  background:linear-gradient(160deg,rgba(70,42,16,.98),rgba(86,52,18,.95),rgba(64,38,14,.98));
-}
-.cpill .cn{
-  font-family:'Playfair Display',serif;
-  font-size:22px;font-weight:600;color:var(--lampglow);display:block;
-  text-shadow:0 0 16px rgba(232,184,74,.3);
-}
-.cpill .cr{font-size:11px;letter-spacing:.1em;color:var(--ink-faded);text-transform:uppercase;margin-top:2px;}
+    /* char counter */
+    .char-count { font-size: 12px; color: rgba(245,234,216,0.3); text-align: right; margin-top: 6px; }
 
-/* ── PROGRESSION AREA — felt-lined drawer ── */
-.prog-area{
-  display:flex;flex-wrap:wrap;gap:9px;min-height:54px;
-  background:
-    linear-gradient(135deg,rgba(8,4,1,.7),rgba(14,8,3,.75));
-  border:1px solid rgba(184,115,42,.18);
-  border-radius:4px;padding:12px;margin-top:12px;align-items:center;
-  box-shadow:inset 0 2px 10px rgba(0,0,0,.5);
-}
-.prg{position:relative;}
-.pch{
-  background:linear-gradient(135deg,rgba(74,40,16,.9),rgba(90,50,18,.85));
-  border:1px solid var(--brass);
-  border-radius:3px;padding:7px 14px;
-  font-family:'Playfair Display',serif;font-size:18px;color:var(--lampglow);
-  box-shadow:0 2px 6px rgba(0,0,0,.4);
-}
-.prg button{
-  position:absolute;top:-7px;right:-7px;
-  width:16px;height:16px;background:#4a1010;
-  border-radius:50%;border:none;color:#e07070;
-  font-size:9px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 1px 4px rgba(0,0,0,.5);
-}
-.prog-hint{font-size:11px;color:rgba(160,120,72,.25);font-style:italic;}
+    /* ─────────────────────────────────────────────
+       BUTTONS
+    ───────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 22px;
+      border-radius: 9999px;
+      font-family: var(--font-body);
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--amber), var(--mahogany-l));
+      color: var(--cream);
+      box-shadow: 0 4px 16px rgba(200,118,42,0.35);
+      border-color: rgba(200,118,42,0.5);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(200,118,42,0.5);
+    }
+    .btn-primary:active { transform: scale(0.97); }
 
-/* ── AI OUTPUT BOX — like a handwritten note tucked in ── */
-.ai-box{
-  background:linear-gradient(160deg,rgba(12,7,2,.9),rgba(18,10,4,.88));
-  border:1px solid rgba(184,115,42,.18);
-  border-left:3px solid var(--brass);
-  border-radius:0 3px 3px 0;
-  padding:16px;margin-top:16px;
-  font-size:15px;line-height:1.8;
-  white-space:pre-wrap;display:none;
-  box-shadow:inset 0 1px 8px rgba(0,0,0,.4);
-}
-.ai-box.on{display:block;}
-.ai-lbl{font-size:12px;letter-spacing:.14em;color:var(--brass2);text-transform:uppercase;margin-bottom:8px;}
+    .btn-ghost {
+      background: var(--smoke2);
+      color: var(--cream-d);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { background: rgba(255,235,200,0.14); border-color: rgba(200,118,42,0.4); }
 
-/* ── PROMPT OUTPUT — the final manuscript ── */
-.prompt-out{
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0px, transparent 27px,
-      rgba(184,115,42,.06) 27px, rgba(184,115,42,.06) 28px
-    ),
-    linear-gradient(160deg, rgba(14,8,2,.95), rgba(20,12,4,.98));
-  border:1px solid rgba(184,115,42,.3);
-  border-radius:3px;padding:22px;
-  font-size:15px;line-height:1.8;
-  white-space:pre-wrap;min-height:150px;
-  color:var(--ink-dry);margin-bottom:14px;
-  box-shadow:
-    inset 0 2px 10px rgba(0,0,0,.4),
-    0 2px 8px rgba(0,0,0,.4);
-}
-.prompt-out .ph{color:rgba(160,120,72,.25);font-style:italic;}
-.p-meta{
-  display:flex;justify-content:space-between;align-items:center;
-  font-size:11px;color:var(--ink-faded);margin-bottom:16px;
-}
-.pbar{width:110px;height:3px;background:rgba(184,115,42,.12);border-radius:2px;overflow:hidden;}
-.pfill{height:100%;background:linear-gradient(to right,var(--brass),var(--lampglow));border-radius:2px;transition:width .5s ease;}
+    .btn-outline {
+      background: transparent;
+      color: var(--amber-l);
+      border-color: rgba(200,118,42,0.4);
+    }
+    .btn-outline:hover { background: rgba(200,118,42,0.1); border-color: var(--amber); }
 
-/* ── SPINNER ── */
-.spin{
-  display:none;width:16px;height:16px;
-  border:2px solid rgba(184,115,42,.2);
-  border-top-color:var(--brass2);
-  border-radius:50%;animation:sp .7s linear infinite;
-}
-.spin.on{display:inline-block;}
-@keyframes sp{to{transform:rotate(360deg);}}
+    .btn-large {
+      padding: 16px 32px;
+      font-size: 16px;
+      width: 100%;
+      justify-content: center;
+      border-radius: 16px;
+    }
+    .btn-danger {
+      background: rgba(180,50,30,0.2);
+      color: #f07070;
+      border-color: rgba(180,50,30,0.3);
+    }
+    .btn-danger:hover { background: rgba(180,50,30,0.35); }
 
-/* ── TOAST ── */
-#toast{
-  position:fixed;bottom:28px;left:50%;
-  transform:translateX(-50%) translateY(14px);
-  background:linear-gradient(135deg,var(--mah-warm),var(--mah-edge));
-  border:1px solid var(--brass);
-  color:var(--paper);padding:10px 24px;
-  border-radius:2px;font-size:14px;letter-spacing:.06em;
-  opacity:0;transition:all .28s;pointer-events:none;z-index:200;white-space:nowrap;
-  box-shadow:0 4px 20px rgba(0,0,0,.6);
-}
-#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+    .btn-row {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      margin-top: 14px;
+    }
 
-/* ── INFO BANNERS — like aged paper notices ── */
-.info{
-  background: #241408;
-  border:1px solid rgba(184,115,42,.3);
-  border-left:3px solid var(--brass);
-  border-radius:0 3px 3px 0;
-  padding:14px 16px;font-size:14px;
-  color:var(--ink-faded);margin-bottom:20px;line-height:1.7;
-}
-.info a{color:var(--brass2);text-decoration:none;}
+    /* ─────────────────────────────────────────────
+       SECTION TAGS (lyrics)
+    ───────────────────────────────────────────── */
+    .section-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .section-tag {
+      padding: 6px 14px; border-radius: 9999px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.2s;
+    }
+    .section-tag:hover { transform: scale(1.05); }
+    .tag-verse    { color: #7ec8f0; border-color: rgba(126,200,240,0.4); background: rgba(126,200,240,0.1); }
+    .tag-prechorus{ color: #f0c880; border-color: rgba(240,200,128,0.4); background: rgba(240,200,128,0.08); }
+    .tag-chorus   { color: #f07888; border-color: rgba(240,120,136,0.4); background: rgba(240,120,136,0.08); }
+    .tag-bridge   { color: #88e0b8; border-color: rgba(136,224,184,0.4); background: rgba(136,224,184,0.08); }
+    .tag-outro    { color: #c8a8f0; border-color: rgba(200,168,240,0.4); background: rgba(200,168,240,0.08); }
+    .tag-inst     { color: #a8a8a8; border-color: rgba(168,168,168,0.35); background: rgba(168,168,168,0.07); }
 
-/* ── SETTINGS ── */
-.s-row{
-  display:flex;gap:14px;align-items:flex-start;
-  margin-bottom:20px;padding-bottom:20px;
-  border-bottom:1px solid rgba(184,115,42,.1);
-}
-.s-row:last-child{border:none;}
-.s-ic{font-size:22px;flex-shrink:0;padding-top:3px;}
-.s-text{flex:1;}
-.s-text h3{font-family:'Playfair Display',serif;font-size:17px;color:var(--lampglow);margin-bottom:5px;}
-.s-text p{font-size:14px;color:var(--ink-faded);line-height:1.65;}
-.s-text a{color:var(--brass2);text-decoration:none;}
-.s-text input{margin-top:8px;font-size:15px;}
+    /* ─────────────────────────────────────────────
+       CHORD PALETTE
+    ───────────────────────────────────────────── */
+    .key-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .key-btn {
+      padding: 10px 4px;
+      text-align: center;
+      background: var(--smoke);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      color: var(--cream-d);
+      transition: all 0.2s;
+    }
+    .key-btn:hover { background: var(--smoke2); border-color: var(--amber); }
+    .key-btn.selected {
+      background: rgba(200,118,42,0.25);
+      border-color: var(--amber);
+      color: var(--gold);
+      box-shadow: var(--glow-amber);
+    }
 
-/* ── GRID ── */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
-@media(max-width:460px){.g2{grid-template-columns:1fr;}}
-.g-grp label{
-  display:block;font-size:13px;letter-spacing:.08em;
-  color:var(--ink-faded);margin-bottom:5px;text-transform:uppercase;
-}
+    .mode-select { margin-bottom: 18px; }
 
-/* ── SECTION TAGS ── */
-.stag-row{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;}
-.stag{
-  padding:6px 14px;border-radius:2px;
-  border:1px solid rgba(184,115,42,.22);
-  background:rgba(46,26,10,.35);
-  color:var(--ink-faded);font-family:'Lora',serif;font-size:13px;
-  cursor:pointer;transition:all .2s;
-}
-.stag:hover{color:var(--ink-dry);border-color:rgba(184,115,42,.5);background:rgba(74,40,16,.45);}
-.char-ct{text-align:right;font-size:12px;color:var(--ink-ghost);margin-top:5px;letter-spacing:.06em;}
+    .chord-palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+    .chord-pill {
+      padding: 13px 6px;
+      text-align: center;
+      background: var(--smoke);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 16px; font-weight: 700;
+      cursor: pointer;
+      color: var(--cream);
+      transition: all 0.22s;
+      user-select: none;
+    }
+    .chord-pill:hover {
+      background: rgba(200,118,42,0.18);
+      border-color: var(--amber);
+      transform: scale(1.06);
+    }
+    .chord-pill.selected {
+      background: rgba(200,118,42,0.28);
+      border-color: var(--gold);
+      color: var(--gold);
+      box-shadow: var(--glow-amber);
+    }
+    .chord-pill.pulse {
+      animation: chordPulse 0.4s ease;
+    }
+    @keyframes chordPulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
 
-/* Coffee button — hide text on very small screens */
-@media(max-width:380px){
-  #coffee-float span { display:none; }
-  #coffee-float { padding:10px 14px; }
-}
-.cc-section{margin-bottom:28px;}
-.cc-section-label{
-  font-family:'Playfair Display',serif;
-  font-size:13px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--brass2);margin-bottom:10px;padding-bottom:6px;
-  border-bottom:1px solid rgba(184,115,42,.25);
-}
-.cc-line{margin-bottom:14px;}
-.cc-words{display:flex;flex-wrap:wrap;align-items:flex-end;}
-.cc-word-wrap{
-  display:inline-flex;flex-direction:column;
-  align-items:flex-start;margin-right:5px;margin-bottom:2px;
-  cursor:pointer;
-}
-.cc-chord-slot{
-  font-family:'Playfair Display',serif;
-  font-size:14px;font-weight:600;
-  color:var(--lampglow);
-  min-height:20px;line-height:20px;
-  letter-spacing:.04em;
-  text-shadow:0 0 10px rgba(232,184,74,.4);
-  white-space:nowrap;
-}
-.cc-word{
-  font-size:16px;line-height:1.6;
-  color:var(--ink-dry);
-  padding:1px 3px;border-radius:2px;
-  transition:background .15s;
-  white-space:nowrap;
-  user-select:none;
-}
-.cc-word-wrap:hover .cc-word{background:rgba(184,115,42,.2);color:var(--paper);}
-.cc-word-wrap.has-chord .cc-word{border-bottom:1px solid rgba(232,184,74,.35);}
-.cpill.selected{
-  border-color:var(--lampglow) !important;
-  background:linear-gradient(160deg,rgba(100,60,20,.98),rgba(120,72,22,.95)) !important;
-  box-shadow:0 0 18px rgba(232,184,74,.35),0 3px 8px rgba(0,0,0,.5) !important;
-}
-/* ── RESET BUTTON ── */
-.tab-reset-row{
-  display:flex;justify-content:flex-end;
-  margin-top:28px;padding-top:16px;
-  border-top:1px solid rgba(184,115,42,.15);
-}
-.btn-reset{
-  background:rgba(120,30,30,.25);
-  border:1px solid rgba(180,60,60,.4);
-  color:#e09090;
-  font-family:'Lora',serif;font-size:13px;
-  letter-spacing:.06em;cursor:pointer;
-  padding:9px 18px;border-radius:3px;
-  transition:all .22s;
-  box-shadow:0 1px 4px rgba(0,0,0,.3);
-}
-.btn-reset:hover{
-  background:rgba(160,40,40,.45);
-  border-color:rgba(220,80,80,.65);
-  color:#f0a0a0;
-  box-shadow:0 2px 10px rgba(160,40,40,.3);
-  transform:translateY(-1px);
-}
-/* ── LEARN TAB ── */
-.learn-section{
-  background:linear-gradient(160deg,rgba(20,12,4,.7),rgba(28,16,8,.75));
-  border:1px solid rgba(184,115,42,.18);
-  border-left:3px solid var(--brass);
-  border-radius:0 4px 4px 0;
-  padding:16px 18px;
-  margin-bottom:16px;
-  transition:border-color .2s;
-}
-.learn-section:hover{ border-color:rgba(184,115,42,.35); }
-.learn-section.hidden{ display:none; }
-.learn-section-title{
-  font-family:'Playfair Display',serif;
-  font-size:16px;font-weight:600;
-  color:var(--lampglow);
-  margin-bottom:10px;
-  text-shadow:0 0 12px rgba(232,184,74,.2);
-}
-.learn-list{
-  padding-left:18px;
-  color:var(--ink-dry);
-  font-size:14px;line-height:1.85;
-}
-.learn-ol{ list-style:decimal; }
-.learn-list li{ margin-bottom:4px; }
-.learn-list strong{ color:var(--paper); }
-.learn-list em{ color:var(--ink-faded);font-style:italic; }
-.learn-p{
-  font-size:14px;color:var(--ink-faded);
-  line-height:1.75;margin-bottom:8px;
-}
-.learn-buy-link{
-  display:inline-flex;align-items:center;
-  padding:10px 16px;
-  background:rgba(46,26,10,.6);
-  border:1px solid rgba(184,115,42,.3);
-  border-radius:3px;
-  color:var(--brass2);
-  font-family:'Lora',serif;font-size:13px;
-  text-decoration:none;
-  transition:all .2s;
-}
-.learn-buy-link:hover{
-  background:rgba(74,40,16,.7);
-  border-color:var(--brass2);
-  color:var(--lampglow);
-}
-.learn-no-results{
-  text-align:center;padding:30px 20px;
-  color:var(--ink-ghost);font-style:italic;font-size:14px;
-}
-/* ── HACKS TAB ── */
-.hack-section{ margin-bottom:10px; }
-.hack-section-title{
-  font-family:'Playfair Display',serif;
-  font-size:18px;font-weight:600;
-  color:var(--lampglow);
-  margin-bottom:14px;
-  text-shadow:0 0 14px rgba(232,184,74,.25);
-}
-.hack-card{
-  background:linear-gradient(160deg,rgba(20,12,4,.8),rgba(30,18,6,.82));
-  border:1px solid rgba(184,115,42,.2);
-  border-left:3px solid var(--brass);
-  border-radius:0 4px 4px 0;
-  padding:18px 18px 14px;
-  margin-bottom:14px;
-}
-.hack-card-featured{
-  border-left-color:var(--lampglow);
-  background:linear-gradient(160deg,rgba(26,16,4,.85),rgba(38,22,6,.88));
-}
-.hack-card-title{
-  font-family:'Playfair Display',serif;
-  font-size:15px;font-weight:600;
-  color:var(--ink-dry);
-  margin-bottom:6px;
-}
-.hack-badge{
-  display:inline-block;
-  font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-ghost);
-  border:1px solid rgba(184,115,42,.2);
-  border-radius:2px;padding:2px 8px;
-  margin-bottom:10px;
-}
-.hack-badge-best{
-  color:var(--lampglow);
-  border-color:rgba(232,184,74,.35);
-}
-.hack-sub{
-  font-size:12px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--brass2);margin:12px 0 6px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-}
-.hack-p{
-  font-size:14px;color:var(--ink-faded);
-  line-height:1.7;margin-bottom:8px;
-}
-.hack-p strong{ color:var(--ink-dry); }
-.hack-code{
-  background:rgba(0,0,0,.4);
-  border:1px solid rgba(184,115,42,.18);
-  border-radius:3px;
-  padding:12px 14px;
-  font-family:'Courier New',monospace;
-  font-size:12px;
-  color:var(--paper);
-  line-height:1.7;
-  white-space:pre-wrap;
-  margin-bottom:8px;
-  word-break:break-word;
-}
-.hack-list{
-  padding-left:18px;
-  color:var(--ink-dry);
-  font-size:13px;line-height:1.85;
-  margin-bottom:4px;
-}
-.hack-ol{ list-style:decimal; }
-.hack-list li{ margin-bottom:5px; }
-.hack-list strong{ color:var(--paper); }
-.hack-list em{ color:var(--ink-faded);font-style:italic; }
-.hack-tips{
-  background:rgba(184,115,42,.06);
-  border:1px solid rgba(184,115,42,.15);
-  border-radius:3px;
-  padding:12px 14px;
-  margin-top:12px;
-}
-.hack-tips-title{
-  font-size:12px;letter-spacing:.08em;
-  color:var(--brass2);text-transform:uppercase;
-  margin-bottom:8px;
-}
-</style>
+    /* progression display */
+    .prog-display {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      min-height: 48px;
+      background: rgba(255,235,200,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .prog-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(200,118,42,0.2);
+      border: 1px solid rgba(200,118,42,0.35);
+      color: var(--gold);
+      padding: 6px 12px 6px 14px;
+      border-radius: 9999px;
+      font-size: 15px; font-weight: 700;
+    }
+    .prog-chip-x {
+      cursor: pointer; font-size: 18px; color: rgba(240,192,96,0.6);
+      line-height: 1; transition: color 0.15s;
+    }
+    .prog-chip-x:hover { color: #f07070; }
+    .prog-arrow { color: rgba(245,234,216,0.25); font-size: 16px; }
+
+    /* chord chart */
+    .chart-lyrics {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      background: rgba(255,235,200,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .chord-marker {
+      display: inline-block;
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      background: rgba(200,118,42,0.2);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-right: 2px;
+    }
+
+    /* ─────────────────────────────────────────────
+       ARRANGE PANEL — pill tags
+    ───────────────────────────────────────────── */
+    .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--smoke);
+      color: var(--cream-d);
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .pill:hover { border-color: var(--amber); color: var(--cream); }
+    .pill.on {
+      background: rgba(200,118,42,0.22);
+      border-color: var(--amber);
+      color: var(--gold);
+      box-shadow: 0 0 10px rgba(200,118,42,0.25);
+    }
+
+    .form-row { margin-bottom: 20px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:560px) { .form-grid { grid-template-columns: 1fr; } }
+
+    /* ─────────────────────────────────────────────
+       PROMPT PANEL
+    ───────────────────────────────────────────── */
+    .prompt-output {
+      background: rgba(200,118,42,0.07);
+      border: 1px solid rgba(200,118,42,0.25);
+      border-radius: 14px;
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: var(--cream);
+      min-height: 120px;
+      margin-bottom: 18px;
+      position: relative;
+    }
+    .prompt-char-count {
+      text-align: right; font-size: 12px;
+      color: rgba(245,234,216,0.35); margin-top: 6px;
+    }
+
+    /* ─────────────────────────────────────────────
+       LEARN PANEL
+    ───────────────────────────────────────────── */
+    .learn-search {
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .learn-search input { padding-left: 42px; }
+    .learn-search-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 18px; color: rgba(245,234,216,0.35);
+    }
+
+    .learn-ask-row { display: flex; gap: 10px; margin-bottom: 18px; }
+    .learn-ask-row input { flex: 1; }
+
+    .learn-answer {
+      background: var(--smoke);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 14px; line-height: 1.7;
+      margin-bottom: 18px;
+      display: none;
+    }
+    .learn-answer.visible { display: block; }
+
+    .accordion-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .accordion-item:hover { border-color: rgba(200,118,42,0.4); }
+    .accordion-header {
+      width: 100%; text-align: left;
+      background: var(--smoke);
+      border: none;
+      padding: 16px 18px;
+      color: var(--cream-d);
+      font-family: var(--font-body);
+      font-size: 15px; font-weight: 500;
+      cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: background 0.2s;
+    }
+    .accordion-header:hover { background: var(--smoke2); }
+    .accordion-header .acc-arrow {
+      color: var(--amber);
+      font-size: 18px;
+      transition: transform 0.3s;
+    }
+    .accordion-header.open .acc-arrow { transform: rotate(180deg); }
+    .accordion-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+      padding: 0 18px;
+      font-size: 14px; line-height: 1.7; color: rgba(245,234,216,0.75);
+    }
+    .accordion-body.open { max-height: 1000px; padding: 14px 18px; }
+    .accordion-body ul { padding-left: 18px; }
+    .accordion-body li { margin-bottom: 6px; }
+    .accordion-body strong { color: var(--gold); }
+    .accordion-body a { color: var(--amber-l); }
+
+    /* ─────────────────────────────────────────────
+       HACKS PANEL — same accordion style
+    ───────────────────────────────────────────── */
+
+    /* ─────────────────────────────────────────────
+       SETTINGS
+    ───────────────────────────────────────────── */
+    .settings-section { margin-bottom: 28px; }
+    .settings-section-title {
+      font-family: var(--font-head); font-size: 16px; color: var(--gold);
+      margin-bottom: 14px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* api key */
+    .api-key-wrap { position: relative; }
+    .api-key-wrap input { padding-right: 44px; font-family: monospace; letter-spacing: 0.04em; }
+    .api-key-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: rgba(245,234,216,0.4); font-size: 20px;
+      transition: color 0.2s;
+    }
+    .api-key-toggle:hover { color: var(--gold); }
+
+    /* tip card */
+    .tip-card {
+      background: rgba(200,118,42,0.08);
+      border: 1px solid rgba(200,118,42,0.2);
+      border-radius: 14px; padding: 18px;
+      margin-bottom: 14px;
+    }
+    .tip-card p { font-size: 14px; line-height: 1.6; color: rgba(245,234,216,0.7); }
+    .tip-card a { color: var(--amber-l); text-decoration: none; }
+    .tip-card a:hover { text-decoration: underline; }
+
+    /* ─────────────────────────────────────────────
+       FLOATING ACTION BUTTON
+    ───────────────────────────────────────────── */
+    .fab {
+      position: fixed; bottom: 24px; right: 24px; z-index: 300;
+      width: 58px; height: 58px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--amber), var(--mahogany-l));
+      border: 1px solid rgba(200,118,42,0.5);
+      box-shadow: 0 8px 28px rgba(200,118,42,0.45);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 24px;
+      transition: all 0.3s ease;
+    }
+    .fab:hover {
+      transform: scale(1.1) rotate(10deg);
+      box-shadow: 0 12px 36px rgba(200,118,42,0.6);
+    }
+    .fab-menu {
+      position: fixed; bottom: 94px; right: 20px; z-index: 299;
+      display: flex; flex-direction: column; gap: 10px;
+      align-items: flex-end;
+      transition: all 0.3s ease;
+      opacity: 0; pointer-events: none; transform: translateY(10px);
+    }
+    .fab-menu.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+    .fab-menu-item {
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer;
+      animation: fadeUp 0.25s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fab-menu-label {
+      background: rgba(15,7,2,0.95);
+      border: 1px solid var(--border);
+      padding: 7px 14px; border-radius: 9999px;
+      font-size: 13px; font-weight: 600;
+      color: var(--cream-d); white-space: nowrap;
+    }
+    .fab-menu-icon {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(255,235,200,0.1);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      transition: background 0.2s;
+    }
+    .fab-menu-item:hover .fab-menu-icon { background: rgba(200,118,42,0.2); }
+
+    /* ─────────────────────────────────────────────
+       TOAST
+    ───────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(0);
+      background: linear-gradient(135deg, var(--amber), var(--mahogany));
+      color: var(--cream);
+      padding: 14px 28px; border-radius: 9999px;
+      font-size: 15px; font-weight: 600;
+      box-shadow: 0 8px 32px rgba(200,118,42,0.5);
+      z-index: 9000;
+      transition: all 0.4s ease;
+      white-space: nowrap;
+    }
+    .toast.hide { opacity: 0; transform: translateX(-50%) translateY(20px); }
+
+    /* ─────────────────────────────────────────────
+       CONFETTI / NOTES BURST
+    ───────────────────────────────────────────── */
+    .burst-note {
+      position: fixed; z-index: 9999; pointer-events: none;
+      font-size: 24px;
+      animation: burstFly 2.5s ease-out forwards;
+    }
+    @keyframes burstFly {
+      0%   { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: var(--burst-end) rotate(var(--burst-rot)) scale(0.5); }
+    }
+
+    /* ─────────────────────────────────────────────
+       MISC UTILITIES
+    ───────────────────────────────────────────── */
+    .divider {
+      border: none; border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+    .mono { font-family: 'Courier New', monospace; }
+    .text-gold { color: var(--gold); }
+    .text-muted { color: rgba(245,234,216,0.45); font-size: 13px; }
+    .mt-10 { margin-top: 10px; }
+    .mt-16 { margin-top: 16px; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    ::-webkit-scrollbar-thumb { background: rgba(200,118,42,0.3); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(200,118,42,0.5); }
+
+    /* mobile */
+    @media(max-width:480px) {
+      #app-root { padding: 20px 14px 130px; }
+      .card { padding: 20px 16px; }
+      .chord-palette-grid { grid-template-columns: repeat(auto-fill, minmax(58px,1fr)); }
+      .key-grid { grid-template-columns: repeat(4,1fr); }
+    }
+  </style>
 </head>
 <body>
-<div id="flame"></div>
 
-<header>
-  <span class="flame-ic">🕯️</span>
-  <h1>Music Architect</h1>
-  <div class="tagline">Bring your words. Build the sound.</div>
-</header>
+<!-- Ambient background -->
+<div class="bg-canvas"></div>
 
-<nav class="tabs">
-  <button class="tab on" onclick="showTab('lyrics',this)"><span class="tab-ic">✍️</span>Lyrics</button>
-  <button class="tab" onclick="showTab('chords',this)"><span class="tab-ic">🎸</span>Chords</button>
-  <button class="tab" onclick="showTab('arrange',this)"><span class="tab-ic">🎛️</span>Arrange</button>
-  <button class="tab" onclick="showTab('prompt',this)"><span class="tab-ic">📋</span>Prompt</button>
-  <button class="tab" onclick="showTab('learn',this)"><span class="tab-ic">📖</span>Learn</button>
-  <button class="tab" onclick="showTab('hacks',this)"><span class="tab-ic">⚡</span>Hacks</button>
-  <button class="tab" onclick="showTab('settings',this)"><span class="tab-ic">⚙️</span>Settings</button>
+<!-- Floating musical notes (injected by JS) -->
+
+<!-- ─── TOP NAV ─────────────────────────────── -->
+<nav class="top-nav">
+  <div class="nav-logo"><span>🕯️</span> Music Architect</div>
+  <div class="nav-progress-wrap">
+    <div class="nav-progress-fill" id="nav-progress"></div>
+  </div>
+  <div class="nav-right">
+    <button class="nav-icon-btn" onclick="resetAll()" title="Reset all">↺</button>
+    <button class="nav-icon-btn" id="song-title-btn" onclick="promptTitle()" title="Song title">🎵</button>
+  </div>
 </nav>
 
-<!-- LYRICS -->
-<div id="tab-lyrics" class="panel on">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-    <div class="lbl" style="margin-bottom:0;">Song Title</div>
-    <button class="btn-reset" onclick="resetLyrics()">↺ Reset</button>
-  </div>
-  <input type="text" id="song-title" placeholder="Untitled song…" style="margin-bottom:22px;" oninput="save()">
-
-  <div class="lbl">Write Your Lyrics</div>
-  <p style="font-size:13px;color:var(--ink-faded);line-height:1.65;margin-bottom:10px;">Tap a section tag to label each part of your song, then write directly in the box below. Your words, your voice — we help shape the sound around them.</p>
-  <div class="stag-row">
-    <button class="stag" onclick="insertTag('[Verse]')">Verse</button>
-    <button class="stag" onclick="insertTag('[Pre-Chorus]')">Pre-Chorus</button>
-    <button class="stag" onclick="insertTag('[Chorus]')">Chorus</button>
-    <button class="stag" onclick="insertTag('[Bridge]')">Bridge</button>
-    <button class="stag" onclick="insertTag('[Outro]')">Outro</button>
-    <button class="stag" onclick="insertTag('[Instrumental]')">Instrumental</button>
-  </div>
-  <textarea id="lyrics-box" oninput="updateLyricCount();save();" placeholder="Start writing… or paste your poem here.
-
-[Verse]
-Your first lines go here…
-
-[Chorus]
-The heart of your song…"></textarea>
-  <div class="char-ct"><span id="lyric-count">0</span> characters</div>
-  <div class="divider"></div>
-  <div class="lbl">Lyric Insight <span class="spin" id="spin-lyric"></span></div>
-  <p style="font-size:12px;color:var(--ink-faded);margin-bottom:10px;">AI reads your lyrics and suggests emotional tone, themes, and chord mood — to guide your arrangement. Requires API key in Settings.</p>
-  <div class="btn-row">
-    <button class="btn btn-main" onclick="analyzeLyrics()">🔍 Analyze My Lyrics</button>
-  </div>
-  <div class="ai-box" id="lyric-ai"></div>
+<!-- ─── TAB BAR ──────────────────────────────── -->
+<div class="tab-bar" id="tab-bar">
+  <button class="tab-btn active" data-panel="lyrics"    onclick="switchTab(this,'lyrics')">   <span class="tab-emoji">✍️</span>Lyrics    <span class="tab-dot"></span></button>
+  <button class="tab-btn"        data-panel="chords"    onclick="switchTab(this,'chords')">   <span class="tab-emoji">🎸</span>Chords    <span class="tab-dot"></span></button>
+  <button class="tab-btn"        data-panel="arrange"   onclick="switchTab(this,'arrange')">  <span class="tab-emoji">🎛️</span>Arrange   <span class="tab-dot"></span></button>
+  <button class="tab-btn"        data-panel="prompt"    onclick="switchTab(this,'prompt')">   <span class="tab-emoji">📋</span>Prompt    <span class="tab-dot"></span></button>
+  <button class="tab-btn"        data-panel="learn"     onclick="switchTab(this,'learn')">    <span class="tab-emoji">📖</span>Learn     <span class="tab-dot"></span></button>
+  <button class="tab-btn"        data-panel="hacks"     onclick="switchTab(this,'hacks')">    <span class="tab-emoji">⚡</span>Hacks     <span class="tab-dot"></span></button>
+  <button class="tab-btn"        data-panel="settings"  onclick="switchTab(this,'settings')"> <span class="tab-emoji">⚙️</span>Settings  <span class="tab-dot"></span></button>
 </div>
 
-<!-- CHORDS -->
-<div id="tab-chords" class="panel">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-    <div class="info" style="margin-bottom:0;flex:1;margin-right:10px;">Pick a key and mode, then tap a chord to select it. Tap any word in your lyrics below to place that chord above it. Build your full chart section by section.</div>
-    <button class="btn-reset" onclick="resetChords()">↺ Reset</button>
+<!-- ─── MAIN ────────────────────────────────── -->
+<div id="app-root">
+
+  <!-- ══ LYRICS PANEL ═══════════════════════════ -->
+  <div class="panel active" id="panel-lyrics">
+    <div class="card" id="card-lyrics">
+      <div class="card-header">
+        <div class="card-title">Write Your Lyrics</div>
+        <div class="badge-complete">Complete ✓</div>
+      </div>
+      <p class="hint">Tap a section tag to label each part, then write your lyrics. Your words — we shape the sound around them.</p>
+
+      <div class="section-tags">
+        <span class="section-tag tag-verse"     onclick="insertTag('[Verse]')">Verse</span>
+        <span class="section-tag tag-prechorus"  onclick="insertTag('[Pre-Chorus]')">Pre-Chorus</span>
+        <span class="section-tag tag-chorus"    onclick="insertTag('[Chorus]')">Chorus</span>
+        <span class="section-tag tag-bridge"    onclick="insertTag('[Bridge]')">Bridge</span>
+        <span class="section-tag tag-outro"     onclick="insertTag('[Outro]')">Outro</span>
+        <span class="section-tag tag-inst"      onclick="insertTag('[Instrumental]')">Instrumental</span>
+      </div>
+
+      <textarea id="lyrics-input" rows="12" placeholder="Write or paste your lyrics here...&#10;&#10;[Verse]&#10;Your first verse...&#10;&#10;[Chorus]&#10;Your hook..."></textarea>
+      <div class="char-count"><span id="lyrics-count">0</span> characters</div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="analyzeEmotionAI()">🔍 Lyric Insight (AI)</button>
+      </div>
+      <div id="lyric-feedback" class="learn-answer mt-10"></div>
+    </div>
   </div>
 
-  <div class="g2">
-    <div class="g-grp">
+  <!-- ══ CHORDS PANEL ════════════════════════════ -->
+  <div class="panel" id="panel-chords">
+    <div class="card" id="card-chords">
+      <div class="card-header">
+        <div class="card-title">Pick Your Key & Chords</div>
+        <div class="badge-complete">Complete ✓</div>
+      </div>
+      <p class="hint">Pick a root key, then a mode or feel. Tap chords to build your progression.</p>
+
       <label>Root Key</label>
-      <select id="chord-key" onchange="buildChords()">
-        <option>C</option><option>C#</option><option>D</option><option>D#</option>
-        <option>E</option><option>F</option><option>F#</option><option>G</option>
-        <option>G#</option><option>A</option><option>A#</option><option>B</option>
-      </select>
-    </div>
-    <div class="g-grp">
-      <label>Mode / Feel</label>
-      <select id="chord-mode" onchange="buildChords()">
-        <option value="major">Major — bright, hopeful</option>
-        <option value="minor" selected>Minor — dark, emotional</option>
-        <option value="dorian">Dorian — soulful, bluesy</option>
-        <option value="mixolydian">Mixolydian — rock, folk</option>
-        <option value="pentatonic">Pentatonic — simple, open</option>
-      </select>
-    </div>
-  </div>
+      <div class="key-grid" id="key-grid"></div>
 
-  <div class="lbl">Chord Palette — tap a chord to select it</div>
-  <div class="chord-grid" id="chord-palette"></div>
+      <label class="mt-16">Mode / Feel</label>
+      <div class="mode-select">
+        <select id="mode-select" onchange="rebuildChordPalette()">
+          <option value="major">Major — bright, hopeful</option>
+          <option value="minor">Minor — dark, emotional</option>
+          <option value="dorian">Dorian — soulful, bluesy</option>
+          <option value="mixolydian">Mixolydian — rock, folk</option>
+          <option value="pentatonic">Pentatonic — simple, open</option>
+        </select>
+      </div>
 
-  <div class="lbl" style="margin-top:18px;">Quick Progression Builder</div>
-  <div class="prog-area" id="progression">
-    <span class="prog-hint">Tap chords above to build your progression…</span>
-  </div>
-  <div class="btn-row">
-    <button class="btn btn-ghost" onclick="clearProg()">✕ Clear</button>
-    <button class="btn btn-main" onclick="saveProg()">💾 Save to Arrangement</button>
-    <button class="btn btn-ghost" onclick="suggestProg()">✨ AI Suggest <span class="spin" id="spin-chord"></span></button>
-  </div>
-  <div class="ai-box" id="chord-ai"></div>
+      <label>Chord Palette</label>
+      <div class="chord-palette-grid" id="chord-palette"></div>
 
-  <div class="divider"></div>
-
-  <div class="lbl">Chord Chart</div>
-  <div class="info" style="margin-bottom:12px;">
-    <strong style="color:var(--ink-dry)">Step 1</strong> — Tap a chord in the palette above to select it (it will glow).<br>
-    <strong style="color:var(--ink-dry)">Step 2</strong> — Tap any word below to place that chord above it.<br>
-    <strong style="color:var(--ink-dry)">Step 3</strong> — Tap a placed chord marker to remove it.
-  </div>
-
-  <div id="selected-chord-display" style="
-    text-align:center;padding:10px;margin-bottom:14px;
-    font-family:'Playfair Display',serif;font-size:15px;
-    color:var(--ink-faded);letter-spacing:.08em;
-    border:1px dashed rgba(184,115,42,.2);border-radius:3px;
-  ">No chord selected — tap one above</div>
-
-  <div id="chord-chart" style="font-family:'Lora',serif;"></div>
-
-  <div class="btn-row" style="margin-top:18px;">
-    <button class="btn btn-main" onclick="copyChordChart()">📋 Copy Chord Chart</button>
-    <button class="btn btn-ghost" onclick="clearChart()">✕ Clear Chart</button>
-    <button class="btn btn-ghost" onclick="buildChordChart()">🔄 Refresh from Lyrics</button>
-  </div>
-</div>
-
-<!-- ARRANGE -->
-<div id="tab-arrange" class="panel">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-    <div class="info" style="margin-bottom:0;flex:1;margin-right:10px;">Shape the sound. Every selection below feeds your Suno/Udio prompt. The more specific, the better the output.</div>
-    <button class="btn-reset" onclick="resetArrange()">↺ Reset</button>
-  </div>
-
-  <div class="lbl">Genre &amp; Style</div>
-  <div class="chip-row" id="genre-chips">
-    <button class="chip" onclick="this.classList.toggle('on')">Folk</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Indie</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Country</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Blues</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Soul / R&amp;B</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Rock</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Pop</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Gospel</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Singer-Songwriter</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Americana</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Jazz</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Classical</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Cinematic</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Hip-Hop</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Electronic</button>
-  </div>
-
-  <div class="lbl">Mood / Emotion</div>
-  <div class="chip-row" id="mood-chips">
-    <button class="chip" onclick="this.classList.toggle('on')">Melancholy</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Hopeful</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Desperate</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Triumphant</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Tender</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Aching</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Defiant</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Peaceful</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Raw</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Nostalgic</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Urgent</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Reverent</button>
-  </div>
-
-  <div class="g2">
-    <div class="g-grp">
-      <label>Tempo Feel</label>
-      <select id="tempo-feel">
-        <option>Slow ballad</option>
-        <option>Mid-tempo</option>
-        <option>Uptempo</option>
-        <option>Driving</option>
-        <option>Rubato (free time)</option>
-      </select>
-    </div>
-    <div class="g-grp">
-      <label>BPM (optional)</label>
-      <input type="number" id="bpm" placeholder="e.g. 72" min="40" max="240" oninput="save()">
-    </div>
-    <div class="g-grp">
-      <label>Vocal Style</label>
-      <select id="vocal-style">
-        <option>Male lead, raw / gritty</option>
-        <option>Male lead, clean / melodic</option>
-        <option>Female lead, powerful</option>
-        <option>Female lead, delicate</option>
-        <option>Raspy / weathered</option>
-        <option>Falsetto</option>
-        <option>Choir / harmonies</option>
-        <option>No vocals / instrumental</option>
-      </select>
-    </div>
-    <div class="g-grp">
-      <label>Song Structure</label>
-      <select id="structure">
-        <option>Verse / Chorus / Verse / Chorus / Bridge / Chorus</option>
-        <option>Verse / Verse / Chorus / Verse / Chorus</option>
-        <option>Intro / Verse / Chorus / Verse / Chorus / Outro</option>
-        <option>Through-composed</option>
-        <option>Verse only</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="lbl">Instrumentation</div>
-  <div class="chip-row" id="inst-chips">
-    <button class="chip" onclick="this.classList.toggle('on')">Acoustic guitar</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Electric guitar</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Piano</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Upright bass</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Electric bass</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Drums</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Brushed drums</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Violin / strings</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Cello</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Banjo</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Harmonica</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Pedal steel</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Organ</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Synth pad</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Brass</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Sparse / minimal</button>
-  </div>
-
-  <div class="lbl">Production Style</div>
-  <div class="chip-row" id="prod-chips">
-    <button class="chip" onclick="this.classList.toggle('on')">Lo-fi / tape warmth</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Studio clean</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Live room / natural reverb</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Big cinematic mix</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Stripped / demo feel</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Lush with reverb</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Dry and punchy</button>
-  </div>
-
-  <div class="lbl">Arrangement Dynamics</div>
-  <p style="font-size:13px;color:var(--ink-faded);margin-bottom:10px;line-height:1.65;">Select the moments and movements you want in this song. These will be written into your prompt so the AI knows how the song should arc and breathe.</p>
-  <div class="chip-row" id="dynamics-chips">
-    <button class="chip" onclick="this.classList.toggle('on')">Slow build to chorus</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Beat drop</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Breakdown</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Gradual crescendo</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Sudden silence</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Half-time feel</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Double-time push</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Key change into final chorus</button>
-    <button class="chip" onclick="this.classList.toggle('on')">False ending</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Solo section</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Stripped intro</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Big outro swell</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Fade out</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Abrupt end</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Drum fill into chorus</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Layered build (add instruments each section)</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Sparse verse → full chorus</button>
-    <button class="chip" onclick="this.classList.toggle('on')">Reprise of intro at outro</button>
-  </div>
-
-  <div class="lbl">Describe the Song Arc <span style="font-size:11px;font-style:italic;letter-spacing:0;text-transform:none;color:var(--ink-ghost);">(optional — in your own words)</span></div>
-  <textarea id="song-arc" style="min-height:70px;" oninput="save()" placeholder="e.g. Starts quiet and lonely, builds tension through the verses, explodes into the chorus, strips back to just vocals and guitar for the bridge, then hits hard for the final chorus and fades…"></textarea>
-
-  <div class="divider"></div>
-
-  <div class="lbl">Reference Artists (optional)</div>
-  <input type="text" id="influences" placeholder="e.g. Tom Waits, Patty Griffin, Leonard Cohen…" style="margin-bottom:14px;" oninput="save()">
-
-  <div class="lbl">Additional Notes</div>
-  <textarea id="arr-notes" style="min-height:80px;" oninput="save()" placeholder="Anything else — lyrical themes you want the sound to honor, specific moments, production requests…"></textarea>
-
-  <div class="btn-row">
-    <button class="btn btn-main" onclick="goToPrompt()">📋 Generate My Prompt →</button>
-  </div>
-</div>
-
-<!-- PROMPT -->
-<div id="tab-prompt" class="panel">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-    <div class="info" style="margin-bottom:0;flex:1;margin-right:10px;">Your finished prompt for <strong style="color:var(--ink-dry)">Suno</strong> or <strong style="color:var(--ink-dry)">Udio</strong>. Copy it, open your app, and paste it in the style/description field. Your lyrics go in the separate lyrics field inside those apps.</div>
-    <button class="btn-reset" onclick="resetPrompt()">↺ Reset</button>
-  </div>
-  <div class="lbl">Generated Prompt</div>
-  <div class="prompt-out" id="prompt-out"><span class="ph">Go to Arrange, fill in your song details, then tap "Generate My Prompt →"</span></div>
-  <div class="p-meta">
-    <span id="prompt-char-lbl">0 / 1000 characters</span>
-    <div class="pbar"><div class="pfill" id="prompt-bar" style="width:0%"></div></div>
-  </div>
-  <div class="btn-row">
-    <button class="btn btn-main" onclick="copyPrompt()">📋 Copy Prompt</button>
-    <button class="btn btn-ghost" onclick="buildPrompt()">🔄 Rebuild</button>
-    <button class="btn btn-ghost" onclick="refinePrompt()">✨ AI Refine <span class="spin" id="spin-prompt"></span></button>
-  </div>
-  <div class="ai-box" id="prompt-ai-box"></div>
-  <div class="divider"></div>
-  <div class="lbl">How to Use This</div>
-  <div style="font-size:12px;color:var(--ink-faded);line-height:1.85;">
-    <strong style="color:var(--ink-dry)">Suno:</strong> Paste into the <em>Style of Music</em> field. Put your lyrics in the <em>Lyrics</em> field separately.<br><br>
-    <strong style="color:var(--ink-dry)">Udio:</strong> Paste as the main prompt. Lyrics go in their own section.<br><br>
-    Specificity wins. "Fingerpicked acoustic, brushed snare, 68 BPM, C minor" beats "a sad folk song" every time.
-  </div>
-</div>
-
-<!-- LEARN -->
-<div id="tab-learn" class="panel">
-
-  <!-- Header -->
-  <div style="margin-bottom:20px;">
-    <div class="lbl">Songwriting Craft Reference</div>
-    <p style="font-size:13px;color:var(--ink-faded);line-height:1.7;">
-      Concepts drawn from <em style="color:var(--ink-dry);">The Addiction Formula</em> by Friedemann Findeisen.
-      <a href="https://www.wob.com/en-us/books/friedemann-findeisen/the-addiction-formula/9789082214128" target="_blank" style="color:var(--brass2);margin-left:6px;">Buy the book →</a>
-    </p>
-  </div>
-
-  <!-- Search -->
-  <div class="lbl">Search</div>
-  <input type="text" id="learn-search" placeholder="e.g. tension, hook, chorus, rhythm…" oninput="learnSearch()" style="margin-bottom:18px;">
-
-  <!-- Q&A -->
-  <div class="lbl">Ask a Question <span class="spin" id="spin-learn"></span></div>
-  <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-    <input type="text" id="learn-question" placeholder="e.g. How do I write a better chorus?" style="flex:1;min-width:180px;">
-    <button class="btn btn-main" onclick="askLearn()" style="white-space:nowrap;">✦ Ask</button>
-  </div>
-  <p style="font-size:12px;color:var(--ink-ghost);margin-bottom:10px;">Uses your Claude API key for full answers. Works without a key too — gives a reference-based response.</p>
-  <div class="ai-box" id="learn-ai"></div>
-
-  <div class="divider"></div>
-
-  <!-- Browse sections -->
-  <div id="learn-content">
-
-    <div class="learn-section" data-keywords="holistic system melody harmony lyrics rhythm production psychological triggers anticipation gratification energy curve tension release momentum">
-      <div class="learn-section-title">Core Principles</div>
-      <ul class="learn-list">
-        <li>A song is a holistic system — melody, harmony, lyrics, rhythm, and production must all work together to grab and hold attention.</li>
-        <li>Use psychological triggers: <strong>anticipation → gratification → renewed anticipation.</strong></li>
-        <li>Design your song around its <strong>energy curve</strong> — intentional rises and falls in intensity.</li>
-        <li>Build momentum using tension, implied tension, hype, and release.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="structure intro verse pre-chorus chorus bridge transition energy">
-      <div class="learn-section-title">1. Structure With Intention</div>
-      <ul class="learn-list">
-        <li><strong>Intro</strong> — sets mood</li>
-        <li><strong>Verse</strong> — builds anticipation</li>
-        <li><strong>Pre-Chorus</strong> — heightens tension</li>
-        <li><strong>Chorus</strong> — delivers payoff</li>
-        <li><strong>Bridge</strong> — offers contrast or refresh</li>
-        <li>Transitions should always nudge energy upward or downward purposefully.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="energy music theory hook tension release arc remove">
-      <div class="learn-section-title">2. Focus on Energy Over Music Theory</div>
-      <p class="learn-p">Ask yourself these three questions about every element of your song:</p>
-      <ul class="learn-list">
-        <li>"Does this <strong>increase energy</strong>?"</li>
-        <li>"Does this <strong>serve the hook</strong>?"</li>
-        <li>"Does this <strong>build or release tension</strong>?"</li>
-      </ul>
-      <p class="learn-p">Remove anything that doesn't support the energy arc.</p>
-    </div>
-
-    <div class="learn-section" data-keywords="rhythm energy driver hype momentum subdivision harmonic">
-      <div class="learn-section-title">3. Rhythm Is a Primary Driver of Energy</div>
-      <ul class="learn-list">
-        <li>Rhythm patterns can raise or lower hype <em>regardless</em> of harmonic changes.</li>
-        <li>Subdivision changes influence momentum and emotional response.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="melody harmony arrangement energy pitch contour tension density layer">
-      <div class="learn-section-title">4. Melody, Harmony &amp; Arrangement Serve the Energy Arc</div>
-      <ul class="learn-list">
-        <li>Higher pitch range and contour often = higher energy.</li>
-        <li>Harmony choices shape emotional tension.</li>
-        <li>Arrangement layering increases sonic density to lift sections.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="lyrics narrative tension verse chorus emotional contrast detail">
-      <div class="learn-section-title">5. Lyrics Should Support the Emotional Narrative</div>
-      <ul class="learn-list">
-        <li>Lyrics should match the section's tension level — more detail in verse, more emotional directness in chorus.</li>
-        <li>Contrast themes or perspectives between verse and chorus.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="workflow steps hook verse layer rhythm hype harmony production test flow">
-      <div class="learn-section-title">10-Step Practical Workflow</div>
-      <ol class="learn-list learn-ol">
-        <li>Sketch the <strong>energy curve</strong> first.</li>
-        <li>Define or write the <strong>main hook</strong> early.</li>
-        <li>Build tension in the verses leading to the hook.</li>
-        <li>Gradually <strong>layer instruments</strong> to lift intensity.</li>
-        <li>Adjust <strong>rhythmic density</strong> to support energy shifts.</li>
-        <li>Assign <strong>hype levels</strong> to each section.</li>
-        <li>Refine <strong>harmonic progressions</strong> to match emotional goals.</li>
-        <li>Use lyrics to reinforce transitions and tension.</li>
-        <li>Apply production choices (effects, dynamics, panning) to enhance energy.</li>
-        <li><strong>Test the song's flow</strong> — remove dips or flatlining sections.</li>
-      </ol>
-    </div>
-
-    <div class="learn-section" data-keywords="analyze popular songs energy curve tension gratification map">
-      <div class="learn-section-title">Analyze Popular Songs</div>
-      <ul class="learn-list">
-        <li>Map out energy curves of songs you love.</li>
-        <li>Notice where tension builds and where gratification hits.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="testing draft feedback perception intention energy rise fall">
-      <div class="learn-section-title">Iterative Testing</div>
-      <ul class="learn-list">
-        <li>Play your draft for someone and ask them to sketch where they felt energy rise or fall.</li>
-        <li>Compare their perception to your intention.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="visual tools graph plot low medium high peak transition weak dip">
-      <div class="learn-section-title">Use Visual Tools</div>
-      <ul class="learn-list">
-        <li>Plot your song like a graph: <strong>low → medium → high → refresh → final peak</strong></li>
-        <li>Fix weak transitions or unnecessary dips.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="experiment tension variation transition arrangement unique surprise copy">
-      <div class="learn-section-title">Experiment Instead of Copying</div>
-      <ul class="learn-list">
-        <li>Create your own tension variations, unique transitions, or surprising arrangement decisions.</li>
-        <li>The goal is to understand the principles deeply enough to break the rules intentionally.</li>
-      </ul>
-    </div>
-
-    <div class="learn-section" data-keywords="buy book purchase paperback audiobook findeisen addiction formula">
-      <div class="learn-section-title">Get the Full Book</div>
-      <p class="learn-p">These concepts come from <em>The Addiction Formula</em> by Friedemann Findeisen. The full book goes much deeper — highly recommended.</p>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
-        <a href="https://www.wob.com/en-us/books/friedemann-findeisen/the-addiction-formula/9789082214128" target="_blank" class="learn-buy-link">📗 Paperback — World of Books (~$13.68)</a>
-        <a href="https://www.betterworldbooks.com/product/detail/The-Addiction-Formula-9789082214128" target="_blank" class="learn-buy-link">📗 Paperback — Better World Books (~$24.54)</a>
-        <a href="https://play.google.com/store/audiobooks/details?id=AQAAAIBL1WxVNM" target="_blank" class="learn-buy-link">🎧 Audiobook — Google Play ($25.95)</a>
-        <a href="https://www.barnesandnoble.com/w/the-addiction-formula-friedemann-findeisen/1123156506" target="_blank" class="learn-buy-link">📗 Barnes &amp; Noble</a>
+      <label>Quick Progression Builder</label>
+      <div class="prog-display" id="prog-display">
+        <span class="text-muted" id="prog-empty">Tap chords above to build your progression…</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost"    onclick="clearProgression()">✕ Clear</button>
+        <button class="btn btn-ghost"    onclick="saveProgression()">💾 Save to Arrange</button>
+        <button class="btn btn-outline"  onclick="aiSuggestChords()">✨ AI Suggest</button>
       </div>
     </div>
 
-  </div><!-- end learn-content -->
-</div>
-
-<!-- HACKS -->
-<div id="tab-hacks" class="panel">
-  <div class="lbl">Suno Hacks &amp; Techniques</div>
-  <p style="font-size:13px;color:var(--ink-faded);line-height:1.7;margin-bottom:20px;">
-    Hard-won techniques from the Suno community. Use these alongside your generated prompt to get closer to the sound you actually want.
-  </p>
-
-  <!-- CHORD HACKS -->
-  <div class="hack-section">
-    <div class="hack-section-title">🎸 Chord Hacks</div>
-
-    <div class="hack-card">
-      <div class="hack-card-title">Method 1 — Text-Only Prompt Techniques</div>
-      <div class="hack-badge">Hit-or-Miss · Quick to Try</div>
-      <p class="hack-p">Use <strong>Custom Mode</strong> (toggle it on when creating a song) to separate Style and Lyrics. This prevents Suno from vocalizing your chords.</p>
-
-      <div class="hack-sub">Label it explicitly <span class="hack-rec">Most Recommended</span></div>
-      <div class="hack-code">Style: instrumental trance in A minor, uplifting chord progression
-Lyrics: Chord progression: [Am] [F] [G] [Em]</div>
-
-      <div class="hack-sub">Embed chords directly in lyrics</div>
-      <div class="hack-code">Style: [your genre + key + mood]
-Lyrics: [Am] this is the [F] start of the [C] verse [G] now</div>
-
-      <div class="hack-sub">The [Chords:] tag hack <span class="hack-badge">Community · Inconsistent</span></div>
-      <div class="hack-code">[Chords: |Am|-|F|-|C|-|G|]</div>
-      <p class="hack-p" style="font-size:12px;margin-top:4px;">Pipes and dashes separate chords.</p>
-
-      <div class="hack-sub">Descriptive phrasing in Style</div>
-      <div class="hack-code">"in A minor with chord progression Am–F–G–Em"
-"use I–V–vi–IV progression, strictly follow the chords"</div>
-
-      <div class="hack-tips">
-        <div class="hack-tips-title">💡 Tips for better text results</div>
-        <ul class="hack-list">
-          <li>Add genre/era + mood + BPM — e.g. <em>"melancholic neo-soul, jazz chords, 78 BPM"</em></li>
-          <li>Be repetitive and specific: <em>"chord progression Am F G Em throughout the entire song, no deviations"</em></li>
-          <li>Generate multiple times — Suno is stochastic. Lower Weirdness if available.</li>
-          <li>Works okay for simple common progressions but rarely locks in complex ones perfectly.</li>
-        </ul>
+    <!-- Chord chart -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Chord Chart</div>
       </div>
-    </div>
+      <p class="hint"><strong style="color:var(--gold)">Step 1</strong> — Select a chord above (it glows). &nbsp;<strong style="color:var(--gold)">Step 2</strong> — Tap a word below to place it. &nbsp;<strong style="color:var(--gold)">Step 3</strong> — Tap a placed chord to remove it.</p>
 
-    <div class="hack-card hack-card-featured">
-      <div class="hack-card-title">Method 2 — Upload Audio of Your Chord Progression</div>
-      <div class="hack-badge hack-badge-best">⭐ Most Reliable Method</div>
-      <p class="hack-p">This forces Suno to follow your exact harmony because it analyzes the uploaded audio as a reference.</p>
+      <div id="selected-chord-label" style="font-size:14px;color:var(--amber);margin-bottom:10px;font-weight:600;">No chord selected — tap one above</div>
+      <div class="chart-lyrics" id="chart-lyrics">Add lyrics in the Lyrics tab first.</div>
 
-      <div class="hack-sub">Step-by-step:</div>
-      <ol class="hack-list hack-ol">
-        <li>Create a short audio clip (10–30 seconds) of your chord progression looping — play it on piano, guitar, or use GarageBand/Ableton and export as MP3/WAV. Keep it clean and repetitive — no melody or drums yet.</li>
-        <li>In Suno: Click <strong>Create → Upload Audio</strong>. Upload your chord clip. Choose <strong>Cover mode</strong> (or Instrumental if no lyrics).</li>
-        <li>In the prompt — Style: <em>[genre description] + "strictly follow the uploaded audio's chord progression and harmony exactly, no changes"</em></li>
-        <li>If using Remix/Extend later: Crank <strong>Audio Influence</strong> high (75–90%) and Style Influence medium (60–80%). Lower Weirdness for tighter adherence.</li>
-        <li>Generate. The first clip often follows the chords best — check and regenerate as needed.</li>
-      </ol>
-
-      <div class="hack-sub">Example full prompt with upload:</div>
-      <div class="hack-code">Style: dreamy lo-fi hip-hop in A minor, warm Rhodes piano,
-follow the uploaded chord progression exactly (Am–F–C–G loop)
-Lyrics: [your verses/chorus here]</div>
-
-      <div class="hack-tips">
-        <div class="hack-tips-title">🔧 Quick Troubleshooting</div>
-        <ul class="hack-list">
-          <li><strong>Suno sings the chord names</strong> → switch to Custom Mode and separate style/lyrics</li>
-          <li><strong>It ignores everything</strong> → upload audio + high influence slider</li>
-          <li><strong>For tighter control</strong> → generate a short instrumental first, then Extend it while referencing your chord clip</li>
-          <li><strong>Suno still isn't perfect</strong> with inversions, complex jazz voicings, or descending bass lines — simple triads/sevenths work best</li>
-        </ul>
+      <div class="btn-row mt-10">
+        <button class="btn btn-ghost" onclick="copyChordChart()">📋 Copy Chart</button>
+        <button class="btn btn-ghost" onclick="clearChordChart()">✕ Clear</button>
+        <button class="btn btn-ghost" onclick="refreshChordChart()">🔄 Refresh from Lyrics</button>
       </div>
     </div>
   </div>
 
-  <div class="divider"></div>
+  <!-- ══ ARRANGE PANEL ═══════════════════════════ -->
+  <div class="panel" id="panel-arrange">
+    <div class="card" id="card-arrange">
+      <div class="card-header">
+        <div class="card-title">Shape the Sound</div>
+        <div class="badge-complete">Complete ✓</div>
+      </div>
+      <p class="hint">Every selection feeds your Suno/Udio prompt. The more specific, the better the output.</p>
 
-  <!-- TECHNIQUE HACKS -->
-  <div class="hack-section">
-    <div class="hack-section-title">⚡ Technique Hacks</div>
+      <!-- Genre -->
+      <div class="form-row">
+        <label>Genre & Style</label>
+        <div class="pill-group" id="genre-group"></div>
+      </div>
 
-    <div class="hack-card hack-card-featured">
-      <div class="hack-card-title">1. The "Top-Loaded Palette" Prompt Formula</div>
-      <div class="hack-badge hack-badge-best">Cuts wasted credits by ~60%</div>
-      <p class="hack-p">Stop writing full sentences. Use this exact structure in the Style box:</p>
-      <div class="hack-code">[Mood] + [Energy] + [2 Instruments max] + [Vocal Identity]</div>
-      <div class="hack-sub">Examples:</div>
-      <div class="hack-code">"Melancholic, low-energy, fingerstyle acoustic guitar + warm Rhodes,
-soft breathy female vocal"
+      <!-- Mood -->
+      <div class="form-row">
+        <label>Mood / Emotion</label>
+        <div class="pill-group" id="mood-group"></div>
+      </div>
 
-"Cinematic dark, explosive energy, distorted guitars + double-kick
-drums, raspy male vocal"</div>
-      <p class="hack-p" style="margin-top:8px;">This is the <strong>#1 hack in 2026.</strong> Suno's weights lock onto it instantly.</p>
+      <!-- Tempo + BPM -->
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Tempo Feel</label>
+          <div class="pill-group" id="tempo-group"></div>
+        </div>
+        <div class="form-row">
+          <label>BPM (optional)</label>
+          <input type="number" id="bpm-input" placeholder="e.g. 72" min="40" max="220" />
+        </div>
+      </div>
+
+      <!-- Vocal -->
+      <div class="form-row">
+        <label>Vocal Style</label>
+        <div class="pill-group" id="vocal-group"></div>
+      </div>
+
+      <!-- Structure -->
+      <div class="form-row">
+        <label>Song Structure</label>
+        <div class="pill-group" id="structure-group"></div>
+      </div>
+
+      <!-- Instrumentation -->
+      <div class="form-row">
+        <label>Instrumentation</label>
+        <div class="pill-group" id="instrument-group"></div>
+      </div>
+
+      <!-- Production -->
+      <div class="form-row">
+        <label>Production Style</label>
+        <div class="pill-group" id="production-group"></div>
+      </div>
+
+      <!-- Dynamics -->
+      <div class="form-row">
+        <label>Arrangement Dynamics</label>
+        <div class="pill-group" id="dynamics-group"></div>
+      </div>
+
+      <!-- Arc text -->
+      <div class="form-row">
+        <label>Describe the Song Arc (optional)</label>
+        <textarea id="arc-text" rows="3" placeholder="e.g. starts bare and intimate, swells into a massive chorus, ends stripped again..."></textarea>
+      </div>
+
+      <!-- Reference artists -->
+      <div class="form-row">
+        <label>Reference Artists (optional)</label>
+        <input type="text" id="reference-artists" placeholder="e.g. Fleetwood Mac, Tom Petty, Phoebe Bridgers" />
+      </div>
+
+      <!-- Extra notes -->
+      <div class="form-row">
+        <label>Additional Notes</label>
+        <textarea id="extra-notes" rows="3" placeholder="Anything else Suno or Udio should know..."></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="switchToPrompt()">📋 Generate My Prompt →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PROMPT PANEL ════════════════════════════ -->
+  <div class="panel" id="panel-prompt">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Your AI Music Prompt</div>
+      </div>
+      <p class="hint">Copy this → open Suno or Udio → paste in the Style/Description field. Your lyrics go in their separate lyrics field.</p>
+
+      <button class="btn btn-primary btn-large" onclick="generatePrompt()" style="margin-bottom:18px;">✨ Generate My Prompt</button>
+
+      <div class="prompt-output mono" id="prompt-output">Go to Arrange, fill in your details, then tap "Generate My Prompt."</div>
+      <div class="prompt-char-count"><span id="prompt-char-count">0</span> / 1000 characters</div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost"   onclick="copyPrompt()">📋 Copy Prompt</button>
+        <button class="btn btn-ghost"   onclick="generatePrompt()">🔄 Rebuild</button>
+        <button class="btn btn-outline" onclick="aiRefinePrompt()">✨ AI Refine</button>
+      </div>
     </div>
 
-    <div class="hack-card">
-      <div class="hack-card-title">2. Meta Tags &amp; Structure Tags</div>
-      <div class="hack-badge">Forces proper songs every time</div>
-      <p class="hack-p">Put these in the <strong>Lyrics box</strong> (Custom Mode). Suno treats anything in [brackets] as instructions, not lyrics.</p>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">How to Use This</div>
+      <p class="hint"><strong style="color:var(--gold)">Suno:</strong> Paste into the <em>Style of Music</em> field. Put your lyrics in the <em>Lyrics</em> field separately.</p>
+      <br>
+      <p class="hint"><strong style="color:var(--gold)">Udio:</strong> Paste as the main prompt. Lyrics go in their own section.</p>
+      <br>
+      <p class="hint">Specificity wins. <em>"Fingerpicked acoustic, brushed snare, 68 BPM, C minor"</em> beats <em>"a sad folk song"</em> every time.</p>
+    </div>
+  </div>
 
-      <div class="hack-sub">Must-use tags:</div>
-      <div class="hack-code">[Verse 1] / [Chorus] / [Bridge] / [Outro] / [Instrumental Break]
-[Energy: Low] → [Add Tension] → [Energy: High, Explosive]</div>
+  <!-- ══ LEARN PANEL ═════════════════════════════ -->
+  <div class="panel" id="panel-learn">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px;">Ask a Question</div>
+      <div class="learn-ask-row">
+        <input type="text" id="learn-question" placeholder="e.g. How do I write a pre-chorus?" onkeydown="if(event.key==='Enter')askLearn()" />
+        <button class="btn btn-primary" onclick="askLearn()">✦ Ask</button>
+      </div>
+      <div id="learn-answer" class="learn-answer"></div>
+    </div>
 
-      <div class="hack-sub">Tag stacking (3–5 lines at start of a section):</div>
-      <div class="hack-code">[Verse 1]
+    <div class="card">
+      <div class="card-title" style="margin-bottom:4px;">Songwriting Craft Reference</div>
+      <p class="text-muted" style="margin-bottom:16px;">Concepts from <em>The Addiction Formula</em> by Friedemann Findeisen. <a href="https://www.wob.com/en-us/books/friedemann-findeisen/the-addiction-formula/9789082214128" target="_blank" style="color:var(--amber-l)">Buy the book →</a></p>
+
+      <div id="learn-accordion"></div>
+    </div>
+  </div>
+
+  <!-- ══ HACKS PANEL ═════════════════════════════ -->
+  <div class="panel" id="panel-hacks">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:4px;">Suno Hacks & Techniques</div>
+      <p class="text-muted" style="margin-bottom:16px;">Hard-won techniques from the Suno community.</p>
+      <div id="hacks-accordion"></div>
+    </div>
+  </div>
+
+  <!-- ══ SETTINGS PANEL ══════════════════════════ -->
+  <div class="panel" id="panel-settings">
+    <div class="card">
+      <div class="settings-section">
+        <div class="settings-section-title">🔑 Claude API Key (optional)</div>
+        <p class="hint" style="margin-bottom:12px;">Powers Lyric Analysis, AI Chord Suggestions, and Prompt Refinement. Never leaves your device. <a href="https://console.anthropic.com" target="_blank" style="color:var(--amber-l)">Get one free →</a></p>
+        <div class="api-key-wrap">
+          <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+          <button class="api-key-toggle" onclick="toggleApiKey()" id="api-key-eye">👁</button>
+        </div>
+        <div class="btn-row mt-10">
+          <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+          <button class="btn btn-ghost"   onclick="clearApiKey()">Clear</button>
+        </div>
+        <div id="api-key-status" class="text-muted mt-10"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="settings-section">
+        <div class="settings-section-title">📱 Install as App</div>
+        <div class="tip-card">
+          <p><strong style="color:var(--gold)">iPhone (iOS):</strong> Open in Safari → tap Share → <em>"Add to Home Screen."</em></p>
+        </div>
+        <div class="tip-card">
+          <p><strong style="color:var(--gold)">Android:</strong> Open in Chrome → tap ⋮ → <em>"Add to Home Screen"</em> or <em>"Install App."</em></p>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="settings-section">
+        <div class="settings-section-title">💾 Your Data</div>
+        <p class="hint" style="margin-bottom:14px;">Everything stays in your browser. No account, no server, no cloud.</p>
+        <button class="btn btn-danger" onclick="clearAllData()">🗑 Clear All Data</button>
+      </div>
+
+      <hr class="divider">
+
+      <div class="settings-section">
+        <div class="settings-section-title">☕ Leave a Tip</div>
+        <div class="tip-card">
+          <p>This app is free — no subscription, no ads, no data collection. If it helped you make something, a tip keeps the light on.</p>
+          <p style="margin-top:10px;"><a href="https://www.buymeacoffee.com/dannycan" target="_blank">☕ Leave a tip →</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-root -->
+
+<!-- FAB -->
+<div class="fab" id="fab" onclick="toggleFab()">⚡</div>
+<div class="fab-menu" id="fab-menu">
+  <div class="fab-menu-item" onclick="quickProgression()" style="animation-delay:0.05s">
+    <div class="fab-menu-label">Random progression</div>
+    <div class="fab-menu-icon">🎲</div>
+  </div>
+  <div class="fab-menu-item" onclick="quickTitle()" style="animation-delay:0.1s">
+    <div class="fab-menu-label">Suggest title</div>
+    <div class="fab-menu-icon">💡</div>
+  </div>
+  <div class="fab-menu-item" onclick="quickCopyPrompt()" style="animation-delay:0.15s">
+    <div class="fab-menu-label">Copy last prompt</div>
+    <div class="fab-menu-icon">📋</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+const DEFAULT_STATE = {
+  songTitle: '',
+  lyrics: '',
+  rootKey: 'C',
+  mode: 'major',
+  progression: [],        // array of chord strings
+  chordChart: {},         // word-index -> chord
+  genres: [],
+  moods: [],
+  tempos: [],
+  bpm: '',
+  vocals: [],
+  structures: [],
+  instruments: [],
+  productions: [],
+  dynamics: [],
+  arcText: '',
+  referenceArtists: '',
+  extraNotes: '',
+  lastPrompt: '',
+  apiKey: ''
+};
+
+let S = { ...DEFAULT_STATE };
+let selectedChordForChart = null;
+
+function save() {
+  try { localStorage.setItem('ma_state_v2', JSON.stringify(S)); } catch(e){}
+}
+function load() {
+  try {
+    const raw = localStorage.getItem('ma_state_v2');
+    if (raw) S = { ...DEFAULT_STATE, ...JSON.parse(raw) };
+  } catch(e){}
+}
+
+/* ═══════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════ */
+function switchTab(btn, panel) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + panel).classList.add('active');
+  closeFab();
+}
+function switchToPrompt() {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.dataset.panel === 'prompt') b.classList.add('active');
+    else b.classList.remove('active');
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-prompt').classList.add('active');
+  generatePrompt();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRESS
+═══════════════════════════════════════════════ */
+function updateProgress() {
+  let pts = 0;
+  const lyricsOk = S.lyrics.trim().length > 30;
+  const chordsOk = S.progression.length >= 2;
+  const arrangeOk = S.genres.length > 0 || S.moods.length > 0;
+  const promptOk  = S.lastPrompt.length > 50;
+
+  if (lyricsOk) pts += 25;
+  if (chordsOk) pts += 25;
+  if (arrangeOk) pts += 25;
+  if (promptOk)  pts += 25;
+
+  document.getElementById('nav-progress').style.width = Math.max(5, pts) + '%';
+
+  // tab dots & card complete
+  setTabDone('lyrics',  lyricsOk,  'card-lyrics');
+  setTabDone('chords',  chordsOk,  'card-chords');
+  setTabDone('arrange', arrangeOk, 'card-arrange');
+  setTabDone('prompt',  promptOk,  null);
+}
+function setTabDone(tabPanel, done, cardId) {
+  const btn = document.querySelector(`.tab-btn[data-panel="${tabPanel}"]`);
+  if (done) btn.classList.add('done'); else btn.classList.remove('done');
+  if (cardId) {
+    const card = document.getElementById(cardId);
+    if (card) { if (done) card.classList.add('complete'); else card.classList.remove('complete'); }
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   AMBIENT NOTES
+═══════════════════════════════════════════════ */
+function spawnFloatNotes() {
+  const notes = ['♪','♫','𝅘𝅥𝅮','♩','𝄞'];
+  for (let i = 0; i < 6; i++) {
+    const el = document.createElement('div');
+    el.className = 'float-note';
+    el.textContent = notes[Math.floor(Math.random() * notes.length)];
+    el.style.left = (10 + Math.random() * 80) + 'vw';
+    el.style.animationDelay = (Math.random() * 12) + 's';
+    el.style.animationDuration = (10 + Math.random() * 8) + 's';
+    el.style.fontSize = (14 + Math.random() * 16) + 'px';
+    document.body.appendChild(el);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   LYRICS
+═══════════════════════════════════════════════ */
+function insertTag(tag) {
+  const ta = document.getElementById('lyrics-input');
+  const pos = ta.selectionStart;
+  const before = ta.value.substring(0, pos);
+  const after  = ta.value.substring(pos);
+  const prefix = before.length && !before.endsWith('\n') ? '\n\n' : '';
+  ta.value = before + prefix + tag + '\n' + after;
+  ta.focus();
+  S.lyrics = ta.value;
+  save(); updateProgress();
+  updateCharCount();
+}
+function updateCharCount() {
+  const len = document.getElementById('lyrics-input').value.length;
+  document.getElementById('lyrics-count').textContent = len;
+}
+
+/* ═══════════════════════════════════════════════
+   KEYS + MODE
+═══════════════════════════════════════════════ */
+const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function buildKeyGrid() {
+  const grid = document.getElementById('key-grid');
+  grid.innerHTML = '';
+  KEYS.forEach(k => {
+    const btn = document.createElement('div');
+    btn.className = 'key-btn' + (k === S.rootKey ? ' selected' : '');
+    btn.textContent = k;
+    btn.onclick = () => {
+      S.rootKey = k;
+      document.querySelectorAll('.key-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      rebuildChordPalette();
+      save();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   CHORD PALETTE
+═══════════════════════════════════════════════ */
+const MODE_CHORDS = {
+  major:      ['I','ii','iii','IV','V','vi','vii°'],
+  minor:      ['i','ii°','III','iv','v','VI','VII'],
+  dorian:     ['i','ii','III','IV','v','vi°','VII'],
+  mixolydian: ['I','ii','iii°','IV','v','vi','bVII'],
+  pentatonic: ['I','II','III','V','VI']
+};
+const SEMITONES = {'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11};
+const SEMITONE_TO_NOTE = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+const SCALE_INTERVALS = {
+  major:      [0,2,4,5,7,9,11],
+  minor:      [0,2,3,5,7,8,10],
+  dorian:     [0,2,3,5,7,9,10],
+  mixolydian: [0,2,4,5,7,9,10],
+  pentatonic: [0,2,4,7,9]
+};
+const CHORD_TYPES = {
+  major:      ['maj','min','min','maj','maj','min','dim'],
+  minor:      ['min','dim','maj','min','min','maj','maj'],
+  dorian:     ['min','min','maj','maj','min','dim','maj'],
+  mixolydian: ['maj','min','dim','maj','min','min','maj'],
+  pentatonic: ['maj','maj','maj','maj','maj']
+};
+
+function buildChordName(rootSemi, type) {
+  const root = SEMITONE_TO_NOTE[rootSemi % 12];
+  if (type === 'min') return root + 'm';
+  if (type === 'dim') return root + '°';
+  return root;
+}
+
+function rebuildChordPalette() {
+  S.mode = document.getElementById('mode-select').value;
+  const palette = document.getElementById('chord-palette');
+  palette.innerHTML = '';
+
+  const rootSemi = SEMITONES[S.rootKey];
+  const intervals = SCALE_INTERVALS[S.mode];
+  const types     = CHORD_TYPES[S.mode];
+
+  // Primary scale chords
+  const chords = intervals.map((interval, i) => buildChordName((rootSemi + interval) % 12, types[i]));
+
+  // Add common extra chords
+  const extras = [
+    buildChordName((rootSemi + 2) % 12, 'min') + '7',
+    buildChordName((rootSemi + 5) % 12, 'maj') + '7',
+    buildChordName(rootSemi, 'maj') + 'sus2',
+    buildChordName(rootSemi, 'maj') + 'sus4',
+    buildChordName((rootSemi + 7) % 12, 'maj') + '7',
+    buildChordName((rootSemi + 9) % 12, 'min') + '7',
+  ];
+
+  const all = [...new Set([...chords, ...extras])];
+
+  all.forEach(chord => {
+    const pill = document.createElement('div');
+    pill.className = 'chord-pill' + (S.progression.includes(chord) ? ' selected' : '');
+    pill.textContent = chord;
+    pill.dataset.chord = chord;
+    pill.onclick = () => selectChordPill(pill, chord);
+    palette.appendChild(pill);
+  });
+
+  // refresh chart click zones
+  refreshChordChart();
+  save();
+}
+
+let lastClickedChordPill = null;
+
+function selectChordPill(pill, chord) {
+  // Visual selection for chord chart
+  if (lastClickedChordPill) lastClickedChordPill.classList.remove('selected');
+  pill.classList.add('selected');
+  pill.classList.add('pulse');
+  setTimeout(() => pill.classList.remove('pulse'), 400);
+  lastClickedChordPill = pill;
+  selectedChordForChart = chord;
+  document.getElementById('selected-chord-label').textContent = `Selected: ${chord} — now tap a word below`;
+  // Also add to progression (single handler — no duplicate addEventListener needed)
+  if (S.progression.length < 16) {
+    addToProgression(chord);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRESSION BUILDER
+═══════════════════════════════════════════════ */
+function renderProgression() {
+  const display = document.getElementById('prog-display');
+  const empty   = document.getElementById('prog-empty');
+  if (!S.progression.length) {
+    display.innerHTML = '<span class="text-muted" id="prog-empty">Tap chords above to build your progression…</span>';
+    return;
+  }
+  display.innerHTML = S.progression.map((c, i) =>
+    (i ? '<span class="prog-arrow">→</span>' : '') +
+    `<div class="prog-chip">${c}<span class="prog-chip-x" onclick="removeFromProgression(${i})">×</span></div>`
+  ).join('');
+}
+
+function addToProgression(chord) {
+  S.progression.push(chord);
+  renderProgression();
+  save();
+  updateProgress();
+}
+function removeFromProgression(i) {
+  S.progression.splice(i, 1);
+  renderProgression();
+  save();
+  updateProgress();
+}
+function clearProgression() {
+  S.progression = [];
+  renderProgression();
+  save();
+  updateProgress();
+}
+function saveProgression() {
+  showToast('💾 Progression saved to Arrange');
+}
+
+/* ═══════════════════════════════════════════════
+   CHORD CHART
+═══════════════════════════════════════════════ */
+function refreshChordChart() {
+  const el = document.getElementById('chart-lyrics');
+  const lyrics = S.lyrics.trim();
+  if (!lyrics) { el.innerHTML = 'Add lyrics in the Lyrics tab first.'; return; }
+
+  // Split into words, build clickable spans
+  // Store chord placements in S.chordChart keyed by word-index
+  const words = lyrics.split(/(\s+)/);
+  let wordIdx = 0;
+  el.innerHTML = words.map(tok => {
+    if (/^\s+$/.test(tok)) return tok.replace(/\n/g, '<br>');
+    const wi = wordIdx++;
+    const chord = S.chordChart[wi];
+    const chordSpan = chord ? `<span class="chord-marker" onclick="removeChordFromChart(${wi})">${chord}</span>` : '';
+    return `${chordSpan}<span class="chart-word" onclick="placeChordOnWord(${wi})" style="cursor:pointer;color:var(--cream)">${tok}</span>`;
+  }).join('');
+}
+
+function placeChordOnWord(wi) {
+  if (!selectedChordForChart) {
+    showToast('Select a chord from the palette first');
+    return;
+  }
+  S.chordChart[wi] = selectedChordForChart;
+  refreshChordChart();
+  save();
+}
+function removeChordFromChart(wi) {
+  delete S.chordChart[wi];
+  refreshChordChart();
+  save();
+}
+function clearChordChart() {
+  S.chordChart = {};
+  refreshChordChart();
+  save();
+}
+function copyChordChart() {
+  const el = document.getElementById('chart-lyrics');
+  navigator.clipboard.writeText(el.innerText || el.textContent).then(() => showToast('📋 Chart copied'));
+}
+
+/* ═══════════════════════════════════════════════
+   PILL GROUPS (Arrange)
+═══════════════════════════════════════════════ */
+const ARRANGE_DATA = {
+  genres: ['Folk','Indie','Country','Blues','Soul / R&B','Rock','Pop','Gospel','Singer-Songwriter','Americana','Jazz','Classical','Cinematic','Hip-Hop','Electronic'],
+  moods: ['Melancholy','Hopeful','Desperate','Triumphant','Tender','Aching','Defiant','Peaceful','Raw','Nostalgic','Urgent','Reverent'],
+  tempos: ['Slow ballad','Mid-tempo','Uptempo','Driving','Rubato (free time)'],
+  vocals: ['Male lead, raw / gritty','Male lead, clean / melodic','Female lead, powerful','Female lead, delicate','Raspy / weathered','Falsetto','Choir / harmonies','No vocals / instrumental'],
+  structures: ['Verse / Chorus / Verse / Chorus / Bridge / Chorus','Verse / Verse / Chorus / Verse / Chorus','Intro / Verse / Chorus / Verse / Chorus / Outro','Through-composed','Verse only'],
+  instruments: ['Acoustic guitar','Electric guitar','Piano','Upright bass','Electric bass','Drums','Brushed drums','Violin / strings','Cello','Banjo','Harmonica','Pedal steel','Organ','Synth pad','Brass','Sparse / minimal'],
+  productions: ['Lo-fi / tape warmth','Studio clean','Live room / natural reverb','Big cinematic mix','Stripped / demo feel','Lush with reverb','Dry and punchy'],
+  dynamics: ['Slow build to chorus','Beat drop','Breakdown','Gradual crescendo','Sudden silence','Half-time feel','Double-time push','Key change into final chorus','False ending','Solo section','Stripped intro','Big outro swell','Fade out','Abrupt end','Drum fill into chorus','Layered build (add instruments each section)','Sparse verse → full chorus','Reprise of intro at outro']
+};
+
+const ARRANGE_MAP = {
+  'genre-group':      { key: 'genres',      multi: true },
+  'mood-group':       { key: 'moods',       multi: true },
+  'tempo-group':      { key: 'tempos',      multi: false },
+  'vocal-group':      { key: 'vocals',      multi: false },
+  'structure-group':  { key: 'structures',  multi: false },
+  'instrument-group': { key: 'instruments', multi: true },
+  'production-group': { key: 'productions', multi: false },
+  'dynamics-group':   { key: 'dynamics',    multi: true }
+};
+
+function buildPillGroup(groupId, items, stateKey, multi) {
+  const el = document.getElementById(groupId);
+  el.innerHTML = '';
+  items.forEach(item => {
+    const p = document.createElement('div');
+    p.className = 'pill' + (S[stateKey].includes(item) ? ' on' : '');
+    p.textContent = item;
+    p.onclick = () => {
+      if (multi) {
+        if (S[stateKey].includes(item)) S[stateKey] = S[stateKey].filter(x => x !== item);
+        else S[stateKey].push(item);
+      } else {
+        S[stateKey] = S[stateKey].includes(item) ? [] : [item];
+      }
+      p.classList.toggle('on', S[stateKey].includes(item));
+      save();
+      updateProgress();
+    };
+    el.appendChild(p);
+  });
+}
+
+function buildAllPillGroups() {
+  buildPillGroup('genre-group',      ARRANGE_DATA.genres,      'genres',      true);
+  buildPillGroup('mood-group',       ARRANGE_DATA.moods,       'moods',       true);
+  buildPillGroup('tempo-group',      ARRANGE_DATA.tempos,      'tempos',      false);
+  buildPillGroup('vocal-group',      ARRANGE_DATA.vocals,      'vocals',      false);
+  buildPillGroup('structure-group',  ARRANGE_DATA.structures,  'structures',  false);
+  buildPillGroup('instrument-group', ARRANGE_DATA.instruments, 'instruments', true);
+  buildPillGroup('production-group', ARRANGE_DATA.productions, 'productions', false);
+  buildPillGroup('dynamics-group',   ARRANGE_DATA.dynamics,    'dynamics',    true);
+}
+
+/* ═══════════════════════════════════════════════
+   PROMPT GENERATOR
+═══════════════════════════════════════════════ */
+function generatePrompt() {
+  const parts = [];
+
+  if (S.genres.length)      parts.push('Genre: ' + S.genres.join(', '));
+  if (S.moods.length)       parts.push('Mood: ' + S.moods.join(', '));
+  if (S.tempos.length)      parts.push('Tempo: ' + S.tempos[0] + (S.bpm ? ` (${S.bpm} BPM)` : ''));
+  else if (S.bpm)           parts.push(`BPM: ${S.bpm}`);
+  if (S.vocals.length)      parts.push('Vocals: ' + S.vocals[0]);
+  if (S.rootKey)            parts.push(`Key: ${S.rootKey} ${S.mode}`);
+  if (S.progression.length) parts.push('Chord progression: ' + S.progression.join(' – '));
+  if (S.structures.length)  parts.push('Structure: ' + S.structures[0]);
+  if (S.instruments.length) parts.push('Instrumentation: ' + S.instruments.join(', '));
+  if (S.productions.length) parts.push('Production: ' + S.productions[0]);
+  if (S.dynamics.length)    parts.push('Arrangement: ' + S.dynamics.join(', '));
+  if (S.arcText.trim())     parts.push('Arc: ' + S.arcText.trim());
+  if (S.referenceArtists.trim()) parts.push('Reference artists: ' + S.referenceArtists.trim());
+  if (S.extraNotes.trim())  parts.push(S.extraNotes.trim());
+
+  const prompt = parts.join('\n');
+  S.lastPrompt = prompt;
+
+  document.getElementById('prompt-output').textContent = prompt || 'Fill in details in the Arrange tab, then tap Generate.';
+  document.getElementById('prompt-char-count').textContent = prompt.length;
+
+  save();
+  updateProgress();
+
+  if (prompt.length > 50) launchBurst();
+}
+
+function copyPrompt() {
+  if (!S.lastPrompt) { showToast('Generate a prompt first'); return; }
+  navigator.clipboard.writeText(S.lastPrompt).then(() => showToast('📋 Prompt copied to clipboard!'));
+}
+
+/* ═══════════════════════════════════════════════
+   AI CALLS
+═══════════════════════════════════════════════ */
+async function callClaude(systemPrompt, userMessage) {
+  if (!S.apiKey) {
+    return '(No API key — add one in Settings to use AI features)';
+  }
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': S.apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) return `Error: ${data.error.message}`;
+    return data.content?.[0]?.text || 'No response';
+  } catch(e) {
+    return 'Error reaching API. Check your key and connection.';
+  }
+}
+
+async function analyzeEmotionAI() {
+  const lyrics = S.lyrics.trim();
+  if (!lyrics) { showToast('Write some lyrics first'); return; }
+  const fb = document.getElementById('lyric-feedback');
+  fb.textContent = '🔍 Analyzing…';
+  fb.classList.add('visible');
+  const resp = await callClaude(
+    'You are a professional lyricist and music producer. Analyze lyrics briefly: emotional tone (2–3 words), key themes, suggested chord mood (e.g. minor, major, dorian), energy level 1-10, one concrete suggestion. Max 5 sentences.',
+    lyrics
+  );
+  fb.textContent = resp;
+}
+
+async function aiSuggestChords() {
+  const btn = event.target;
+  btn.textContent = '⏳ Suggesting…';
+  btn.disabled = true;
+  const resp = await callClaude(
+    'You are a music theory expert. Suggest a 4-chord progression in the given key and mode. Return ONLY the chord names separated by dashes, e.g. "Am - F - C - G". Nothing else.',
+    `Key: ${S.rootKey}, Mode: ${S.mode}, Lyrics mood: ${S.moods.join(', ') || 'unspecified'}`
+  );
+  btn.textContent = '✨ AI Suggest';
+  btn.disabled = false;
+  // Parse response
+  const cleaned = resp.replace(/^.*?([A-G][^\n]+)/m,'$1').trim();
+  const chords = cleaned.split(/\s*[-–—|,]\s*/).filter(Boolean).slice(0,8);
+  if (chords.length) {
+    S.progression = chords;
+    renderProgression();
+    save();
+    updateProgress();
+    showToast('✨ AI suggested: ' + chords.join(' – '));
+  } else {
+    showToast(resp.substring(0,80));
+  }
+}
+
+async function aiRefinePrompt() {
+  if (!S.lastPrompt) { generatePrompt(); }
+  const btn = document.querySelector('[onclick="aiRefinePrompt()"]');
+  btn.textContent = '⏳ Refining…';
+  btn.disabled = true;
+  const resp = await callClaude(
+    'You are an expert at writing Suno/Udio AI music prompts. Take the user\'s prompt details and rewrite them as a single, highly effective music generation prompt. Be specific and punchy. Max 180 words.',
+    S.lastPrompt
+  );
+  btn.textContent = '✨ AI Refine';
+  btn.disabled = false;
+  S.lastPrompt = resp;
+  document.getElementById('prompt-output').textContent = resp;
+  document.getElementById('prompt-char-count').textContent = resp.length;
+  save();
+}
+
+async function askLearn() {
+  const question = document.getElementById('learn-question').value.trim();
+  if (!question) return;
+  const answerEl = document.getElementById('learn-answer');
+  answerEl.textContent = '✦ Thinking…';
+  answerEl.classList.add('visible');
+
+  const resp = await callClaude(
+    'You are a friendly, expert songwriting coach. Answer the question concisely and practically. Reference The Addiction Formula concepts when relevant. Max 200 words.',
+    question
+  );
+  answerEl.textContent = resp;
+}
+
+/* ═══════════════════════════════════════════════
+   LEARN ACCORDION
+═══════════════════════════════════════════════ */
+const LEARN_SECTIONS = [
+  { title: 'Core Principles', body: `<ul>
+    <li>A song is a holistic system — melody, harmony, lyrics, rhythm, and production must all work together.</li>
+    <li>Use psychological triggers: <strong>anticipation → gratification → renewed anticipation.</strong></li>
+    <li>Design around your song's <strong>energy curve</strong> — intentional rises and falls in intensity.</li>
+    <li>Build momentum using tension, implied tension, hype, and release.</li>
+  </ul>` },
+  { title: '1. Structure With Intention', body: `<ul>
+    <li><strong>Intro</strong> — sets mood</li>
+    <li><strong>Verse</strong> — builds anticipation</li>
+    <li><strong>Pre-Chorus</strong> — heightens tension</li>
+    <li><strong>Chorus</strong> — delivers payoff</li>
+    <li><strong>Bridge</strong> — offers contrast or refresh</li>
+    <li>Transitions should always nudge energy upward or downward purposefully.</li>
+  </ul>` },
+  { title: '2. Focus on Energy Over Theory', body: `<p>Ask about every element:</p><ul>
+    <li>"Does this <strong>increase energy?</strong>"</li>
+    <li>"Does this <strong>serve the hook?</strong>"</li>
+    <li>"Does this <strong>build or release tension?</strong>"</li>
+    <li>Remove anything that doesn't support the energy arc.</li>
+  </ul>` },
+  { title: '3. Rhythm Is a Primary Driver', body: `<ul>
+    <li>Rhythm patterns can raise or lower hype regardless of harmonic changes.</li>
+    <li>Subdivision changes influence momentum and emotional response.</li>
+  </ul>` },
+  { title: '4. Melody, Harmony & Arrangement', body: `<ul>
+    <li>Higher pitch range = higher energy.</li>
+    <li>Harmony choices shape emotional tension.</li>
+    <li>Arrangement layering increases sonic density to lift sections.</li>
+  </ul>` },
+  { title: '5. Lyrics Support the Emotional Narrative', body: `<ul>
+    <li>Match the section's tension level — more detail in verse, more directness in chorus.</li>
+    <li>Contrast themes or perspectives between verse and chorus.</li>
+  </ul>` },
+  { title: '10-Step Practical Workflow', body: `<ol style="padding-left:18px">
+    <li>Sketch the <strong>energy curve</strong> first.</li>
+    <li>Define or write the <strong>main hook</strong> early.</li>
+    <li>Build tension in verses leading to the hook.</li>
+    <li>Gradually <strong>layer instruments</strong> to lift intensity.</li>
+    <li>Adjust <strong>rhythmic density</strong> to support energy shifts.</li>
+    <li>Assign <strong>hype levels</strong> to each section.</li>
+    <li>Refine <strong>harmonic progressions</strong> to match emotional goals.</li>
+    <li>Use lyrics to reinforce transitions and tension.</li>
+    <li>Apply production choices to enhance energy.</li>
+    <li><strong>Test the song's flow</strong> — remove dips or flatlining sections.</li>
+  </ol>` },
+  { title: 'Get the Full Book', body: `<p>Concepts from <em>The Addiction Formula</em> by Friedemann Findeisen.</p>
+    <ul style="margin-top:10px">
+      <li><a href="https://www.wob.com/en-us/books/friedemann-findeisen/the-addiction-formula/9789082214128" target="_blank">📗 Paperback — World of Books (~$13.68)</a></li>
+      <li><a href="https://play.google.com/store/audiobooks/details?id=AQAAAIBL1WxVNM" target="_blank">🎧 Audiobook — Google Play ($25.95)</a></li>
+      <li><a href="https://www.barnesandnoble.com/w/the-addiction-formula-friedemann-findeisen/1123156506" target="_blank">📗 Barnes & Noble</a></li>
+    </ul>` }
+];
+
+const HACKS_SECTIONS = [
+  { title: '🎸 Method 1 — Text-Only Prompt Techniques', body: `<p>Use <strong>Custom Mode</strong> in Suno to separate Style and Lyrics. Label chords explicitly:</p>
+    <pre style="background:rgba(255,255,255,0.04);padding:10px;border-radius:8px;font-size:12px;margin-top:8px;overflow-x:auto">Style: [genre + key + mood]
+Lyrics: [Am] this is the [F] start of the [C] verse [G]</pre>` },
+  { title: '🎸 Method 2 — Upload Audio (Most Reliable)', body: `<ol style="padding-left:18px">
+    <li>Record 10–30 sec of your chord progression looping (piano/guitar or DAW).</li>
+    <li>In Suno: <strong>Create → Upload Audio</strong>. Choose Cover or Instrumental mode.</li>
+    <li>Set Audio Influence to 75–90%, Style Influence 60–80%.</li>
+    <li>In the prompt, write: "strictly follow the uploaded audio's chord progression."</li>
+  </ol>` },
+  { title: '⚡ The Top-Loaded Palette Formula', body: `<p>Use this structure in the Style box — cuts wasted credits by ~60%:</p>
+    <pre style="background:rgba(255,255,255,0.04);padding:10px;border-radius:8px;font-size:12px;margin-top:8px">[Mood] + [Energy] + [2 Instruments max] + [Vocal Identity]
+
+"Melancholic, low-energy, fingerstyle acoustic + warm Rhodes,
+ soft breathy female vocal"</pre>` },
+  { title: '⚡ Meta Tags & Structure Tags', body: `<p>Put these in the <strong>Lyrics box</strong> (Custom Mode). Suno treats brackets as instructions:</p>
+    <pre style="background:rgba(255,255,255,0.04);padding:10px;border-radius:8px;font-size:12px;margin-top:8px">[Verse 1]
 [Mood: Melancholic, Reflective]
 [Energy: Low, Sparse]
 [Instrumentation: Solo acoustic guitar, distant reverb]
 [Vocal: Soft, breathy, intimate]
+Your first line of lyrics here...</pre>` },
+  { title: '🔧 Quick Troubleshooting', body: `<ul>
+    <li><strong>Suno sings the chord names</strong> → switch to Custom Mode</li>
+    <li><strong>It ignores everything</strong> → upload audio + high influence slider</li>
+    <li><strong>For tighter control</strong> → generate short instrumental first, then Extend</li>
+    <li><strong>Complex voicings ignored</strong> → simple triads/sevenths work best</li>
+  </ul>` }
+];
 
-Your first line of lyrics here...</div>
-
-      <div class="hack-tips">
-        <div class="hack-tips-title">💡 Pro tip</div>
-        <ul class="hack-list">
-          <li>Stack tags before each section for maximum control over how each part sounds.</li>
-          <li>Use <strong>[Instrumental Break]</strong> to force a solo or pause with no vocals.</li>
-          <li>Use <strong>[Fade Out]</strong> or <strong>[Abrupt End]</strong> to control endings.</li>
-        </ul>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- SETTINGS -->
-<div id="tab-settings" class="panel">
-  <div class="s-row">
-    <div class="s-ic">🔑</div>
-    <div class="s-text">
-      <h3>Claude API Key (optional)</h3>
-      <p>Powers Lyric Analysis, AI Chord Suggestions, and Prompt Refinement. You supply your own key — it never leaves your device. <a href="https://console.anthropic.com" target="_blank">Get one free at console.anthropic.com</a></p>
-      <input type="password" id="api-key-input" placeholder="sk-ant-…" oninput="saveKey()">
-      <p id="key-status" style="margin-top:6px;font-size:11px;color:var(--ink-faded);"></p>
-    </div>
-  </div>
-  <div class="s-row">
-    <div class="s-ic">📱</div>
-    <div class="s-text">
-      <h3>Install on iPhone (iOS)</h3>
-      <p>Open this page in <strong style="color:var(--ink-dry)">Safari</strong> → tap the Share button (box with arrow) → <strong style="color:var(--ink-dry)">"Add to Home Screen."</strong> Music Architect installs like a native app — no App Store needed.</p>
-    </div>
-  </div>
-  <div class="s-row">
-    <div class="s-ic">🤖</div>
-    <div class="s-text">
-      <h3>Install on Android</h3>
-      <p>Open in <strong style="color:var(--ink-dry)">Chrome</strong> → tap the three-dot menu → <strong style="color:var(--ink-dry)">"Add to Home Screen"</strong> or <strong style="color:var(--ink-dry)">"Install App."</strong></p>
-    </div>
-  </div>
-
-  <div class="s-row">
-    <div class="s-ic">💾</div>
-    <div class="s-text">
-      <h3>Your Data</h3>
-      <p>Everything stays in your browser. No account, no server, no cloud. Your lyrics and settings are saved locally on your device.</p>
-      <div class="btn-row" style="margin-top:10px;">
-        <button class="btn btn-ghost" onclick="clearAll()">🗑 Clear All Data</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="s-row" style="border-top:1px solid rgba(184,115,42,.2);padding-top:20px;margin-top:4px;">
-    <div class="s-ic">☕</div>
-    <div class="s-text">
-      <h3>Leave a Tip</h3>
-      <p>This app is free — no subscription, no ads, no data collection. If it helped you make something, a tip keeps the light on and the desk warm.</p>
-      <a href="https://www.buymeacoffee.com/dannycan"
-         target="_blank"
-         style="
-           display:inline-flex;align-items:center;gap:12px;
-           margin-top:16px;
-           padding:16px 30px;
-           background:linear-gradient(135deg,#7a4a10,#a06020);
-           border:1px solid rgba(184,115,42,.5);
-           border-radius:3px;
-           color:var(--paper);
-           font-family:'Lora',serif;
-           font-size:17px;
-           letter-spacing:.04em;
-           text-decoration:none;
-           box-shadow:0 2px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);
-           transition:all .22s;
-         "
-         onmouseover="this.style.background='linear-gradient(135deg,#8a5618,#b07030)'"
-         onmouseout="this.style.background='linear-gradient(135deg,#7a4a10,#a06020)'"
-      >
-        ☕ Leave a tip
-      </a>
-      <p style="margin-top:10px;font-size:12px;color:var(--ink-ghost);">Opens in a new tab. No account needed — even a dollar means a lot.</p>
-    </div>
-  </div>
-</div>
-
-<!-- Floating tip button -->
-<a id="coffee-float"
-   href="https://www.buymeacoffee.com/dannycan"
-   target="_blank"
-   title="Leave a tip"
-   style="
-     position:fixed;
-     bottom:24px;right:20px;
-     z-index:150;
-     display:flex;align-items:center;gap:8px;
-     padding:13px 22px;
-     background:linear-gradient(135deg,#6a3c10,#9a5820);
-     border:1px solid rgba(184,115,42,.55);
-     border-radius:30px;
-     color:var(--paper);
-     font-family:'Lora',serif;
-     font-size:15px;
-     letter-spacing:.04em;
-     text-decoration:none;
-     box-shadow:0 4px 20px rgba(0,0,0,.6),0 0 0 1px rgba(184,115,42,.15);
-     transition:all .25s;
-     opacity:.92;
-   "
-   onmouseover="this.style.opacity='1';this.style.transform='translateY(-2px)'"
-   onmouseout="this.style.opacity='.92';this.style.transform='translateY(0)'"
->
-  ☕ <span>Leave a tip</span>
-</a>
-
-<div id="toast"></div>
-
-<script>
-// ── STATE ──
-const S = { progression:[], savedProg:'', selectedChord:null, chartData:{}, chartSections:[], _lastLyricsHash:'' };
-
-// ── CHORD ENGINE ──
-const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const MODES = {
-  major:      { intervals:[0,2,4,5,7,9,11], quality:['','m','m','','','m','°'], roles:['Tonic','Supertonic','Mediant','Subdominant','Dominant','Submediant','Leading'] },
-  minor:      { intervals:[0,2,3,5,7,8,10], quality:['m','°','','m','m','',''],  roles:['Tonic','Supertonic','Mediant','Subdominant','Dominant','Submediant','Subtonic'] },
-  dorian:     { intervals:[0,2,3,5,7,9,10], quality:['m','m','','','m','°',''],  roles:['Tonic','Supertonic','Mediant','Subdominant','Dominant','Submediant','Subtonic'] },
-  mixolydian: { intervals:[0,2,4,5,7,9,10], quality:['','m','°','','m','m',''],  roles:['Tonic','Supertonic','Mediant','Subdominant','Dominant','Submediant','Subtonic'] },
-  pentatonic: { intervals:[0,2,5,7,9],       quality:['','m','','','m'],          roles:['Tonic','Supertonic','Subdominant','Dominant','Submediant'] },
-};
-
-function buildChords() {
-  const root = document.getElementById('chord-key').value;
-  const mode = document.getElementById('chord-mode').value;
-  const { intervals, quality, roles } = MODES[mode];
-  const ri = NOTES.indexOf(root);
-  const palette = document.getElementById('chord-palette');
-  palette.innerHTML = '';
-  intervals.forEach((semi, i) => {
-    const note = NOTES[(ri + semi) % 12];
-    const display = note + quality[i];
-    const div = document.createElement('div');
-    div.className = 'cpill';
-    div.innerHTML = `<span class="cn">${display}</span><span class="cr">${roles[i]}</span>`;
-    div.onclick = () => selectOrAddChord(display, div);
-    palette.appendChild(div);
+function buildAccordion(containerId, sections) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  sections.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'accordion-item';
+    item.innerHTML = `
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        ${s.title}
+        <span class="acc-arrow">⌄</span>
+      </button>
+      <div class="accordion-body">${s.body}</div>`;
+    el.appendChild(item);
   });
 }
-
-// ── CHORD SELECTION MODE ──
-// Single tap = select for chart placement
-// Double tap within 400ms = add to progression builder
-let S_lastTap = 0;
-let S_lastChord = '';
-
-function selectOrAddChord(name, el) {
-  const now = Date.now();
-  if (name === S_lastChord && now - S_lastTap < 400) {
-    // Double-tap → add to progression
-    addChord(name);
-    S_lastTap = 0; S_lastChord = '';
-    return;
-  }
-  S_lastTap = now; S_lastChord = name;
-
-  // Select this chord for chart placement
-  S.selectedChord = name;
-  document.querySelectorAll('.cpill').forEach(p => p.classList.remove('selected'));
-  el.classList.add('selected');
-  const disp = document.getElementById('selected-chord-display');
-  if (disp) disp.textContent = `Selected: ${name} — now tap a word below`;
-}
-
-function addChord(name) {
-  S.progression.push(name);
-  renderProg();
-}
-function removeChord(i) {
-  S.progression.splice(i, 1);
-  renderProg();
-}
-function clearProg() {
-  S.progression = [];
-  renderProg();
-}
-function renderProg() {
-  const area = document.getElementById('progression');
-  if (!S.progression.length) {
-    area.innerHTML = '<span class="prog-hint">Tap chords above to build your progression… (double-tap a chord to add it here)</span>';
-    return;
-  }
-  area.innerHTML = S.progression.map((c, i) => `
-    <div class="prg">
-      <div class="pch">${c}</div>
-      <button onclick="removeChord(${i})">✕</button>
-    </div>`).join('');
-}
-function saveProg() {
-  S.savedProg = S.progression.join(' – ');
-  toast('Progression saved ✓');
-}
-
-// ── CHORD CHART ENGINE ──
-// S.chartData: { 'sectionIdx-lineIdx-wordIdx': 'chord' }
-
-function buildChordChart() {
-  const raw = document.getElementById('lyrics-box').value;
-  if (!raw.trim()) {
-    document.getElementById('chord-chart').innerHTML =
-      '<p style="color:var(--ink-faded);font-size:14px;font-style:italic;">Write some lyrics first on the Lyrics tab, then come back here.</p>';
-    S.chartSections = [];
-    return;
-  }
-
-  // Only re-parse if lyrics changed — preserves chord placements
-  const rawHash = raw.length + '|' + raw.substring(0, 60);
-  if (S._lastLyricsHash === rawHash && S.chartSections.length) {
-    renderChordChart();
-    return;
-  }
-  S._lastLyricsHash = rawHash;
-
-  // Parse into sections by [Tag] markers
-  const lines = raw.split('\n');
-  const sections = [];
-  let current = null;
-
-  lines.forEach(line => {
-    const tagMatch = line.match(/^\[(.+)\]$/);
-    if (tagMatch) {
-      current = { label: tagMatch[1], lines: [] };
-      sections.push(current);
-    } else if (line.trim() !== '') {
-      if (!current) { current = { label: '', lines: [] }; sections.push(current); }
-      current.lines.push(line);
-    }
+function toggleAccordion(header) {
+  const body = header.nextElementSibling;
+  const wasOpen = header.classList.contains('open');
+  // close siblings
+  header.closest('.card').querySelectorAll('.accordion-header.open').forEach(h => {
+    h.classList.remove('open');
+    h.nextElementSibling.classList.remove('open');
   });
-
-  S.chartSections = sections;
-  if (!S.chartData) S.chartData = {};
-  renderChordChart();
-}
-
-function renderChordChart() {
-  const container = document.getElementById('chord-chart');
-  if (!S.chartSections || !S.chartSections.length) {
-    container.innerHTML = '<p style="color:var(--ink-faded);font-size:14px;font-style:italic;">Tap "Refresh from Lyrics" to load your lyrics.</p>';
-    return;
+  if (!wasOpen) {
+    header.classList.add('open');
+    body.classList.add('open');
   }
-  container.innerHTML = '';
-
-  S.chartSections.forEach((section, si) => {
-    const secDiv = document.createElement('div');
-    secDiv.className = 'cc-section';
-    if (section.label) {
-      const lbl = document.createElement('div');
-      lbl.className = 'cc-section-label';
-      lbl.textContent = section.label;
-      secDiv.appendChild(lbl);
-    }
-
-    section.lines.forEach((line, li) => {
-      const lineDiv = document.createElement('div');
-      lineDiv.className = 'cc-line';
-      const wordsDiv = document.createElement('div');
-      wordsDiv.className = 'cc-words';
-
-      // Split line into words, preserving spaces as structure
-      const words = line.split(/(\s+)/);
-      let wordIdx = 0;
-
-      words.forEach(token => {
-        if (!token || /^\s+$/.test(token)) {
-          // Space token — just a gap
-          if (token) {
-            const spacer = document.createElement('span');
-            spacer.style.display = 'inline-block';
-            spacer.style.width = '6px';
-            wordsDiv.appendChild(spacer);
-          }
-          return;
-        }
-
-        const key = `${si}-${li}-${wordIdx}`;
-        const existingChord = S.chartData[key] || '';
-        const wrap = document.createElement('div');
-        wrap.className = 'cc-word-wrap' + (existingChord ? ' has-chord' : '');
-        wrap.dataset.key = key;
-
-        const chordSlot = document.createElement('div');
-        chordSlot.className = 'cc-chord-slot' + (existingChord ? '' : ' empty');
-        chordSlot.textContent = existingChord;
-
-        const wordEl = document.createElement('div');
-        wordEl.className = 'cc-word';
-        wordEl.textContent = token;
-
-        wrap.appendChild(chordSlot);
-        wrap.appendChild(wordEl);
-
-        wrap.addEventListener('click', () => {
-          if (!S.selectedChord) {
-            // If something is already placed here, remove it on tap
-            if (S.chartData[key]) {
-              delete S.chartData[key];
-              saveChartData();
-              renderChordChart();
-            } else {
-              toast('Tap a chord in the palette first');
-            }
-            return;
-          }
-          // Toggle: if same chord already here, remove it
-          if (S.chartData[key] === S.selectedChord) {
-            delete S.chartData[key];
-          } else {
-            S.chartData[key] = S.selectedChord;
-          }
-          saveChartData();
-          renderChordChart();
-        });
-
-        wordsDiv.appendChild(wrap);
-        wordIdx++;
-      });
-
-      lineDiv.appendChild(wordsDiv);
-      secDiv.appendChild(lineDiv);
-    });
-
-    container.appendChild(secDiv);
-  });
 }
 
-function clearChart() {
-  requireConfirm('chart', () => {
-    S.chartData = {};
-    saveChartData();
-    renderChordChart();
-    toast('Chart cleared ✓');
-  });
+/* ═══════════════════════════════════════════════
+   FAB
+═══════════════════════════════════════════════ */
+function toggleFab() {
+  const menu = document.getElementById('fab-menu');
+  menu.classList.toggle('open');
 }
-
-function saveChartData() {
-  try { localStorage.setItem('ma_chart', JSON.stringify(S.chartData)); } catch(e){}
+function closeFab() {
+  document.getElementById('fab-menu').classList.remove('open');
 }
+document.addEventListener('click', e => {
+  if (!e.target.closest('.fab') && !e.target.closest('.fab-menu')) closeFab();
+});
 
-function copyChordChart() {
-  // Make sure sections are built before copying
-  if (!S.chartSections || !S.chartSections.length) {
-    buildChordChart();
-  }
-  if (!S.chartSections || !S.chartSections.length) {
-    toast('Write some lyrics first, then build the chart');
-    return;
-  }
-  let out = '';
-  const title = document.getElementById('song-title').value.trim();
-  if (title) out += title + '\n' + '─'.repeat(title.length) + '\n\n';
-
-  S.chartSections.forEach((section, si) => {
-    if (section.label) out += '[' + section.label + ']\n';
-    section.lines.forEach((line, li) => {
-      // Build chord line and lyric line
-      const words = line.split(/(\s+)/);
-      let chordLine = '';
-      let lyricLine = '';
-      let wordIdx = 0;
-
-      words.forEach(token => {
-        if (/^\s+$/.test(token) || token === '') {
-          chordLine += token || '';
-          lyricLine += token || '';
-          return;
-        }
-        const key = `${si}-${li}-${wordIdx}`;
-        const chord = S.chartData[key] || '';
-        const colW = Math.max(chord.length, token.length) + 1;
-        chordLine += chord.padEnd(colW);
-        lyricLine += token.padEnd(colW);
-        wordIdx++;
-      });
-
-      if (chordLine.trim()) out += chordLine.trimEnd() + '\n';
-      out += lyricLine.trimEnd() + '\n';
-    });
-    out += '\n';
-  });
-
-  navigator.clipboard.writeText(out.trim())
-    .then(() => toast('Chord chart copied ✓'))
-    .catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = out.trim();
-      document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-      toast('Chord chart copied ✓');
-    });
-}
-
-// ── TABS ──
-function showTab(name, btn) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
-  document.getElementById('tab-' + name).classList.add('on');
-  if (btn) btn.classList.add('on');
-  if (name === 'chords') {
-    if (!document.getElementById('chord-palette').children.length) buildChords();
-    buildChordChart();
-  }
+function quickProgression() {
+  const progressions = [
+    ['C','G','Am','F'],
+    ['Am','F','C','G'],
+    ['D','A','Bm','G'],
+    ['Em','C','G','D'],
+    ['F','C','Dm','Bb'],
+    ['Am','Em','F','C'],
+    ['G','D','Em','C'],
+    ['A','E','F#m','D']
+  ];
+  S.progression = progressions[Math.floor(Math.random() * progressions.length)];
+  renderProgression();
   save();
+  updateProgress();
+  closeFab();
+  showToast('🎲 ' + S.progression.join(' – '));
 }
-function goToPrompt() {
-  const tabs = document.querySelectorAll('.tab');
-  const promptTab = [...tabs].find(t => t.textContent.includes('Prompt'));
-  showTab('prompt', promptTab);
-  buildPrompt();
+function quickTitle() {
+  const titles = ['Midnight Drive','Echoes of You','Golden Hour','Slow Burn','Dust & Bourbon','Lantern in the Dark','The Long Way Home','What We Built','After the Rain','Smoke and Ceremony'];
+  showToast('💡 ' + titles[Math.floor(Math.random() * titles.length)]);
+  closeFab();
+}
+function quickCopyPrompt() {
+  if (!S.lastPrompt) { showToast('Generate a prompt first'); return; }
+  navigator.clipboard.writeText(S.lastPrompt).then(() => showToast('📋 Prompt copied!'));
+  closeFab();
 }
 
-// ── SECTION TAGS ──
-function insertTag(tag) {
-  const ta = document.getElementById('lyrics-box');
-  const s = ta.selectionStart;
-  const val = ta.value;
-  const before = val.substring(0, s);
-  const after = val.substring(s);
-  const nl = (before.length && !before.endsWith('\n')) ? '\n\n' : '';
-  ta.value = before + nl + tag + '\n' + after;
-  ta.focus();
-  const pos = s + nl.length + tag.length + 1;
-  ta.setSelectionRange(pos, pos);
-  updateLyricCount();
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  let toast = document.getElementById('app-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.remove('hide');
+  toastTimer = setTimeout(() => toast.classList.add('hide'), 2600);
+}
+
+/* ═══════════════════════════════════════════════
+   CONFETTI BURST
+═══════════════════════════════════════════════ */
+function launchBurst() {
+  const notes = ['♪','♫','𝅘𝅥𝅮','♩','🎵','✨','🎶'];
+  for (let i = 0; i < 20; i++) {
+    const el = document.createElement('div');
+    el.className = 'burst-note';
+    el.textContent = notes[Math.floor(Math.random() * notes.length)];
+    const startX = 40 + Math.random() * 20;
+    const startY = 50 + Math.random() * 20;
+    el.style.left = startX + 'vw';
+    el.style.top  = startY + 'vh';
+    const endX = (Math.random() - 0.5) * 80;
+    const endY = -40 - Math.random() * 60;
+    el.style.setProperty('--burst-end',  `translate(${endX}vw, ${endY}vh)`);
+    el.style.setProperty('--burst-rot',  `${(Math.random()-0.5)*720}deg`);
+    el.style.animationDelay = (Math.random() * 0.4) + 's';
+    el.style.color = ['var(--amber)','var(--gold)','var(--cream)'][Math.floor(Math.random()*3)];
+    el.style.fontSize = (16 + Math.random() * 20) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+  showToast('🔥 Prompt ready — paste it into Suno or Udio!');
+}
+
+/* ═══════════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════════ */
+function saveApiKey() {
+  S.apiKey = document.getElementById('api-key-input').value.trim();
   save();
+  document.getElementById('api-key-status').textContent = S.apiKey ? '✓ Key saved' : 'Key cleared';
 }
-function updateLyricCount() {
-  document.getElementById('lyric-count').textContent = document.getElementById('lyrics-box').value.length;
-}
-
-// ── API ──
-function getKey() { return localStorage.getItem('ma_key') || ''; }
-function saveKey() {
-  const v = document.getElementById('api-key-input').value.trim();
-  localStorage.setItem('ma_key', v);
-  document.getElementById('key-status').textContent = v ? '🟢 Key saved in browser' : '';
-}
-
-function showApiHelp(targetBoxId) {
-  const box = document.getElementById(targetBoxId);
-  box.innerHTML = `
-    <div class="ai-lbl">🔑 API Key Required</div>
-    <p style="margin-bottom:10px;">This feature uses Claude AI, which requires a free API key from Anthropic. Here's how to get one:</p>
-    <ol style="padding-left:18px;line-height:2;">
-      <li>Go to <a href="https://console.anthropic.com" target="_blank" style="color:var(--brass2);">console.anthropic.com</a></li>
-      <li>Create a free account (just an email address)</li>
-      <li>Click <strong style="color:var(--ink-dry)">API Keys</strong> in the left sidebar</li>
-      <li>Click <strong style="color:var(--ink-dry)">Create Key</strong> — copy it</li>
-      <li>Come back here, tap <strong style="color:var(--ink-dry)">Settings</strong>, paste your key</li>
-    </ol>
-    <p style="margin-top:10px;color:var(--ink-ghost);font-size:13px;">
-      Anthropic gives new accounts free credits to start. You only pay if you use a lot — casual use costs pennies. Your key is stored only on your device and never shared.
-    </p>`;
-  box.classList.add('on');
-}
-
-async function callClaude(prompt) {
-  const key = getKey();
-  if (!key) return null; // caller handles the no-key case
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': key,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:600,
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    if (!res.ok) {
-      const e = await res.json().catch(()=>({}));
-      toast('API error: ' + (e.error?.message || res.status));
-      return null;
-    }
-    const d = await res.json();
-    return d.content?.[0]?.text || null;
-  } catch(e) {
-    toast('Network error — check your key and connection');
-    return null;
-  }
-}
-
-// ── ANALYZE LYRICS ──
-async function analyzeLyrics() {
-  const lyrics = document.getElementById('lyrics-box').value.trim();
-  if (!lyrics) { toast('Write some lyrics first'); return; }
-  const box = document.getElementById('lyric-ai');
-  const sp  = document.getElementById('spin-lyric');
-  if (!getKey()) { showApiHelp('lyric-ai'); return; }
-  box.classList.remove('on'); sp.classList.add('on');
-  const reply = await callClaude(
-    `You are a music producer and lyricist analyst. Read these song lyrics and respond with a concise, practical breakdown: (1) dominant emotional tone, (2) key themes, (3) suggested song structure, (4) chord mood recommendation (e.g. "minor key with unresolved tension"). 4-6 sentences max. No fluff, no praise.\n\nLyrics:\n${lyrics}`
-  );
-  sp.classList.remove('on');
-  if (reply) {
-    box.innerHTML = '<div class="ai-lbl">✦ Lyric Analysis</div>' + reply;
-    box.classList.add('on');
-  }
-}
-
-// ── SUGGEST PROGRESSION ──
-async function suggestProg() {
-  const key  = document.getElementById('chord-key').value;
-  const mode = document.getElementById('chord-mode').value;
-  const lyrics = document.getElementById('lyrics-box').value.substring(0, 300);
-  const box = document.getElementById('chord-ai');
-  const sp  = document.getElementById('spin-chord');
-  if (!getKey()) { showApiHelp('chord-ai'); return; }
-  box.classList.remove('on'); sp.classList.add('on');
-  const reply = await callClaude(
-    `You are a music theory advisor. Suggest 2-3 chord progressions for a song in ${key} ${mode}. For each, list the chords (e.g. Am – F – C – G) and one sentence on emotional effect. Tailor to the lyrics if provided. Under 120 words.\n\nLyrics excerpt: ${lyrics || 'none provided'}`
-  );
-  sp.classList.remove('on');
-  if (reply) {
-    box.innerHTML = '<div class="ai-lbl">✦ Progression Ideas</div>' + reply;
-    box.classList.add('on');
-  }
-}
-
-// ── BUILD PROMPT ──
-function getSelected(id) {
-  return [...document.querySelectorAll('#' + id + ' .chip.on')].map(c => c.textContent.trim()).join(', ');
-}
-function buildPrompt() {
-  const key       = document.getElementById('chord-key').value;
-  const mode      = document.getElementById('chord-mode').value;
-  const tempo     = document.getElementById('tempo-feel').value;
-  const bpm       = document.getElementById('bpm').value;
-  const vocal     = document.getElementById('vocal-style').value;
-  const structure = document.getElementById('structure').value;
-  const influences= document.getElementById('influences').value.trim();
-  const notes     = document.getElementById('arr-notes').value.trim();
-  const arc       = document.getElementById('song-arc').value.trim();
-  const genres    = getSelected('genre-chips');
-  const moods     = getSelected('mood-chips');
-  const insts     = getSelected('inst-chips');
-  const prods     = getSelected('prod-chips');
-  const dynamics  = getSelected('dynamics-chips');
-
-  let parts = [];
-  if (genres)     parts.push(genres);
-  if (moods)      parts.push(moods);
-  parts.push(`${key} ${mode}`);
-  if (S.savedProg) parts.push(`chord progression: ${S.savedProg}`);
-  parts.push(tempo + (bpm ? `, ${bpm} BPM` : ''));
-  if (vocal)      parts.push(vocal);
-  if (insts)      parts.push(insts);
-  if (prods)      parts.push(prods);
-  if (structure)  parts.push(`structure: ${structure}`);
-  if (dynamics)   parts.push(`arrangement: ${dynamics}`);
-  if (arc)        parts.push(arc);
-  if (influences) parts.push(`in the style of ${influences}`);
-  if (notes)      parts.push(notes);
-
-  let prompt = parts.filter(Boolean).join(', ');
-  if (prompt.length > 1000) prompt = prompt.substring(0, 997) + '…';
-
-  const out = document.getElementById('prompt-out');
-  out.textContent = prompt || '';
-  if (!prompt) out.innerHTML = '<span class="ph">Go to Arrange, fill in your song details, then tap "Generate My Prompt →"</span>';
-
-  const len = prompt.length;
-  document.getElementById('prompt-char-lbl').textContent = `${len} / 1000 characters`;
-  document.getElementById('prompt-bar').style.width = Math.min(100,(len/1000)*100) + '%';
+function clearApiKey() {
+  S.apiKey = '';
+  document.getElementById('api-key-input').value = '';
   save();
+  document.getElementById('api-key-status').textContent = 'Key cleared';
+}
+function toggleApiKey() {
+  const inp = document.getElementById('api-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-// ── AI REFINE PROMPT ──
-async function refinePrompt() {
-  const el = document.getElementById('prompt-out');
-  if (el.querySelector('.ph')) { toast('Generate a prompt first'); return; }
-  const current = el.textContent.trim();
-  if (!current) { toast('Generate a prompt first'); return; }
-  if (!getKey()) { showApiHelp('prompt-ai-box'); return; }
-  const lyrics = document.getElementById('lyrics-box').value.substring(0, 400);
-  const sp = document.getElementById('spin-prompt');
-  sp.classList.add('on');
-  const reply = await callClaude(
-    `You are a Suno/Udio prompt engineer. Rewrite this music generation prompt to be more vivid, specific, and evocative. Stay under 950 characters. Output ONLY the refined prompt — no explanation, no quotes around it.\n\nCurrent prompt:\n${current}\n\nLyrics for context:\n${lyrics || 'none'}`
-  );
-  sp.classList.remove('on');
-  if (reply) {
-    const clean = reply.replace(/^["']|["']$/g,'').trim().substring(0,1000);
-    document.getElementById('prompt-out').textContent = clean;
-    const len = clean.length;
-    document.getElementById('prompt-char-lbl').textContent = `${len} / 1000 characters`;
-    document.getElementById('prompt-bar').style.width = Math.min(100,(len/1000)*100)+'%';
-    toast('Prompt refined ✓');
+function resetAll() {
+  if (!confirm('Reset all data for this session?')) return;
+  const key = S.apiKey;
+  S = { ...DEFAULT_STATE, apiKey: key };
+  save();
+  location.reload();
+}
+function clearAllData() {
+  if (!confirm('Clear ALL data including API key?')) return;
+  localStorage.removeItem('ma_state_v2');
+  location.reload();
+}
+
+function promptTitle() {
+  const t = prompt('Song title:', S.songTitle);
+  if (t !== null) { S.songTitle = t; save(); showToast('🎵 ' + (t || 'Title cleared')); }
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+function init() {
+  load();
+
+  // Restore UI from state
+  document.getElementById('lyrics-input').value = S.lyrics;
+  document.getElementById('mode-select').value = S.mode;
+  document.getElementById('bpm-input').value = S.bpm;
+  document.getElementById('arc-text').value = S.arcText;
+  document.getElementById('reference-artists').value = S.referenceArtists;
+  document.getElementById('extra-notes').value = S.extraNotes;
+  document.getElementById('api-key-input').value = S.apiKey;
+  updateCharCount();
+
+  // Build UI
+  buildKeyGrid();
+  rebuildChordPalette();
+  renderProgression();
+  buildAllPillGroups();
+  buildAccordion('learn-accordion', LEARN_SECTIONS);
+  buildAccordion('hacks-accordion', HACKS_SECTIONS);
+
+  // Restore arrange pill states (rebuild paints from S)
+  // already done inside buildAllPillGroups()
+
+  // Live listeners
+  document.getElementById('lyrics-input').addEventListener('input', e => {
+    S.lyrics = e.target.value;
+    updateCharCount();
+    save();
+    updateProgress();
+  });
+  document.getElementById('bpm-input').addEventListener('input', e => {
+    S.bpm = e.target.value;
+    save();
+  });
+  document.getElementById('arc-text').addEventListener('input', e => {
+    S.arcText = e.target.value;
+    save();
+  });
+  document.getElementById('reference-artists').addEventListener('input', e => {
+    S.referenceArtists = e.target.value;
+    save();
+  });
+  document.getElementById('extra-notes').addEventListener('input', e => {
+    S.extraNotes = e.target.value;
+    save();
+  });
+
+  // Ambient notes
+  spawnFloatNotes();
+
+  // Keyboard shortcut
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      switchToPrompt();
+    }
+  });
+
+  if (S.lastPrompt) {
+    document.getElementById('prompt-output').textContent = S.lastPrompt;
+    document.getElementById('prompt-char-count').textContent = S.lastPrompt.length;
   }
+
+  updateProgress();
 }
 
-function copyPrompt() {
-  const el = document.getElementById('prompt-out');
-  // If placeholder span is present, nothing has been generated yet
-  if (el.querySelector('.ph')) { toast('Nothing to copy yet'); return; }
-  const txt = el.textContent.trim();
-  if (!txt) { toast('Nothing to copy yet'); return; }
-  navigator.clipboard.writeText(txt)
-    .then(() => toast('Copied to clipboard ✓'))
-    .catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = txt; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-      toast('Copied ✓');
-    });
+window.addEventListener('load', init);
+
+// Service Worker (PWA offline)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
-
-// ── TOAST ──
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('on');
-  setTimeout(() => t.classList.remove('on'), 2400);
-}
-
-// ── PERSIST ──
-function save() {
-  try {
-    localStorage.setItem('ma_lyrics', document.getElementById('lyrics-box').value);
-    localStorage.setItem('ma_title',  document.getElementById('song-title').value);
-    localStorage.setItem('ma_bpm',    document.getElementById('bpm').value);
-    localStorage.setItem('ma_inf',    document.getElementById('influences').value);
-    localStorage.setItem('ma_notes',  document.getElementById('arr-notes').value);
-    localStorage.setItem('ma_arc',    document.getElementById('song-arc').value);
-  } catch(e){}
-}
-function load() {
-  try {
-    const map = { 'ma_lyrics':'lyrics-box','ma_title':'song-title','ma_bpm':'bpm','ma_inf':'influences','ma_notes':'arr-notes','ma_arc':'song-arc' };
-    for (const [k,id] of Object.entries(map)) {
-      const v = localStorage.getItem(k);
-      if (v !== null) document.getElementById(id).value = v;
-    }
-    const key = localStorage.getItem('ma_key');
-    if (key) {
-      document.getElementById('api-key-input').value = key;
-      document.getElementById('key-status').textContent = '🟢 Key saved in browser';
-    }
-    const chart = localStorage.getItem('ma_chart');
-    if (chart) S.chartData = JSON.parse(chart);
-    updateLyricCount();
-  } catch(e){}
-}
-function clearAll() {
-  requireConfirm('clearall', () => {
-    localStorage.clear();
-    ['lyrics-box','song-title','bpm','influences','arr-notes','song-arc','api-key-input'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('key-status').textContent = '';
-    S.progression = []; S.savedProg = ''; S.chartData = {}; S.chartSections = []; S.selectedChord = null;
-    renderProg();
-    updateLyricCount();
-    toast('All data cleared ✓');
-  });
-}
-
-// ── TAB RESETS ──
-// iOS blocks confirm() in some contexts — use double-tap pattern instead
-const resetPending = {};
-function requireConfirm(key, action) {
-  if (resetPending[key]) {
-    clearTimeout(resetPending[key]);
-    delete resetPending[key];
-    action();
-  } else {
-    toast('Tap again to confirm reset');
-    resetPending[key] = setTimeout(() => delete resetPending[key], 3000);
-  }
-}
-
-function resetLyrics() {
-  requireConfirm('lyrics', () => {
-    document.getElementById('song-title').value = '';
-    document.getElementById('lyrics-box').value = '';
-    document.getElementById('lyric-ai').classList.remove('on');
-    document.getElementById('lyric-ai').innerHTML = '';
-    updateLyricCount();
-    localStorage.removeItem('ma_lyrics');
-    localStorage.removeItem('ma_title');
-    S.chartSections = []; S.chartData = {}; S._lastLyricsHash = '';
-    saveChartData();
-    toast('Lyrics cleared ✓');
-  });
-}
-
-function resetChords() {
-  requireConfirm('chords', () => {
-    S.progression = []; S.savedProg = '';
-    S.chartData = {}; S.chartSections = []; S._lastLyricsHash = '';
-    S.selectedChord = null;
-    renderProg();
-    saveChartData();
-    document.querySelectorAll('.cpill').forEach(p => p.classList.remove('selected'));
-    const disp = document.getElementById('selected-chord-display');
-    if (disp) disp.textContent = 'No chord selected — tap one above';
-    document.getElementById('chord-ai').classList.remove('on');
-    document.getElementById('chord-ai').innerHTML = '';
-    buildChordChart();
-    toast('Chords & chart cleared ✓');
-  });
-}
-
-function resetArrange() {
-  requireConfirm('arrange', () => {
-    document.querySelectorAll('#genre-chips .chip, #mood-chips .chip, #inst-chips .chip, #prod-chips .chip, #dynamics-chips .chip')
-      .forEach(c => c.classList.remove('on'));
-    document.getElementById('influences').value = '';
-    document.getElementById('arr-notes').value = '';
-    document.getElementById('song-arc').value = '';
-    document.getElementById('bpm').value = '';
-    document.getElementById('tempo-feel').selectedIndex = 0;
-    document.getElementById('vocal-style').selectedIndex = 0;
-    document.getElementById('structure').selectedIndex = 0;
-    localStorage.removeItem('ma_inf');
-    localStorage.removeItem('ma_notes');
-    localStorage.removeItem('ma_arc');
-    localStorage.removeItem('ma_bpm');
-    toast('Arrangement cleared ✓');
-  });
-}
-
-function resetPrompt() {
-  requireConfirm('prompt', () => {
-    const out = document.getElementById('prompt-out');
-    out.innerHTML = '<span class="ph">Go to Arrange, fill in your song details, then tap "Generate My Prompt →"</span>';
-    document.getElementById('prompt-char-lbl').textContent = '0 / 1000 characters';
-    document.getElementById('prompt-bar').style.width = '0%';
-    document.getElementById('prompt-ai-box').classList.remove('on');
-    document.getElementById('prompt-ai-box').innerHTML = '';
-    toast('Prompt cleared ✓');
-  });
-}
-
-// ── LEARN TAB ──
-function learnSearch() {
-  const q = document.getElementById('learn-search').value.trim().toLowerCase();
-  const sections = document.querySelectorAll('.learn-section');
-  let anyVisible = false;
-  sections.forEach(sec => {
-    const keywords = (sec.dataset.keywords || '').toLowerCase();
-    const text = sec.textContent.toLowerCase();
-    if (!q || keywords.includes(q) || text.includes(q)) {
-      sec.classList.remove('hidden');
-      anyVisible = true;
-    } else {
-      sec.classList.add('hidden');
-    }
-  });
-  // Show no-results message
-  let nr = document.getElementById('learn-no-results');
-  if (!anyVisible && q) {
-    if (!nr) {
-      nr = document.createElement('div');
-      nr.id = 'learn-no-results';
-      nr.className = 'learn-no-results';
-      document.getElementById('learn-content').appendChild(nr);
-    }
-    nr.textContent = `No results for "${q}" — try a different word.`;
-  } else if (nr) {
-    nr.remove();
-  }
-}
-
-const LEARN_CONTENT = `
-CORE PRINCIPLES: A song is a holistic system. Use psychological triggers: anticipation, gratification, renewed anticipation. Design around an energy curve. Build momentum using tension, implied tension, hype, and release.
-
-STRUCTURE: Intro sets mood. Verse builds anticipation. Pre-Chorus heightens tension. Chorus delivers payoff. Bridge offers contrast. Transitions should nudge energy purposefully.
-
-ENERGY OVER THEORY: Ask — does this increase energy? Does this serve the hook? Does this build or release tension? Remove anything that doesn't support the energy arc.
-
-RHYTHM: Rhythm patterns raise or lower hype regardless of harmonic changes. Subdivision changes influence momentum and emotional response.
-
-MELODY HARMONY ARRANGEMENT: Higher pitch often equals higher energy. Harmony shapes emotional tension. Layering increases sonic density to lift sections.
-
-LYRICS: Match section tension level — more detail in verse, more emotional directness in chorus. Contrast themes between verse and chorus.
-
-10-STEP WORKFLOW: 1. Sketch energy curve first. 2. Define main hook early. 3. Build tension in verses. 4. Layer instruments gradually. 5. Adjust rhythmic density. 6. Assign hype levels. 7. Refine harmonic progressions. 8. Use lyrics to reinforce transitions. 9. Apply production choices. 10. Test flow and remove dips.
-
-APPLYING THE CONCEPTS: Map energy curves of songs you love. Play drafts for others and ask where energy rose or fell. Plot your song as a graph: low to medium to high to refresh to final peak. Experiment with your own tension variations and unique transitions.
-`;
-
-async function askLearn() {
-  const q = document.getElementById('learn-question').value.trim();
-  if (!q) { toast('Type a question first'); return; }
-  const box = document.getElementById('learn-ai');
-  const sp  = document.getElementById('spin-learn');
-  box.classList.remove('on'); sp.classList.add('on');
-
-  const key = getKey();
-  if (key) {
-    // Full AI answer using the content as context
-    const reply = await callClaude(
-      `You are a songwriting coach. Use the following reference material to answer the user's question clearly and practically. If the answer isn't in the material, draw on general songwriting knowledge but stay practical and concise.\n\nREFERENCE MATERIAL:\n${LEARN_CONTENT}\n\nQUESTION: ${q}\n\nAnswer in 3-6 sentences. Be direct and specific. No fluff.`
-    );
-    sp.classList.remove('on');
-    if (reply) {
-      box.innerHTML = `<div class="ai-lbl">✦ Answer</div>${reply}`;
-      box.classList.add('on');
-    }
-  } else {
-    // No API key — search the content and return the most relevant section
-    sp.classList.remove('on');
-    const qLower = q.toLowerCase();
-    const sections = document.querySelectorAll('.learn-section');
-    let bestMatch = null;
-    let bestScore = 0;
-    sections.forEach(sec => {
-      const text = sec.textContent.toLowerCase();
-      const keywords = (sec.dataset.keywords || '').toLowerCase();
-      let score = 0;
-      qLower.split(' ').forEach(word => {
-        if (word.length > 2) {
-          if (keywords.includes(word)) score += 2;
-          if (text.includes(word)) score += 1;
-        }
-      });
-      if (score > bestScore) { bestScore = score; bestMatch = sec; }
-    });
-
-    if (bestMatch && bestScore > 0) {
-      const title = bestMatch.querySelector('.learn-section-title')?.textContent || 'Reference';
-      const content = bestMatch.querySelector('.learn-list, .learn-p')?.textContent || '';
-      box.innerHTML = `<div class="ai-lbl">✦ Most Relevant Section: ${title}</div>${content.substring(0,400)}${content.length > 400 ? '…' : ''}<br><br><span style="font-size:12px;color:var(--ink-ghost);">Add a Claude API key in Settings for full AI answers.</span>`;
-      box.classList.add('on');
-    } else {
-      box.innerHTML = `<div class="ai-lbl">✦ No Match Found</div>Try searching in the box above, or add a Claude API key in Settings for full AI answers.`;
-      box.classList.add('on');
-    }
-  }
-}
-
-
-load();
-buildChords();
 </script>
 </body>
 </html>
